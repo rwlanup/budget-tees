@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+
+allowBuilds:
+  '@nestjs/core': true
+  sharp: true
+  unrs-resolver: true
+
+# Shared dependency versions across all workspace packages.
+# Apps reference these with "catalog:" so every app uses the same version.
+catalog:
+  typescript: ^5.7.3

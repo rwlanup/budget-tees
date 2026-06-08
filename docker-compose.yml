@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: budget-tees-postgres
+    restart: unless-stopped
+    # Inject DB_* vars into the container (used by the healthcheck below).
+    env_file:
+      - apps/backend/.env
+    # Map the app's DB_* vars onto the names the postgres image expects.
+    # ${DB_*} is interpolated from --env-file (see note below), with fallbacks.
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-budget_tees}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$DB_USERNAME" -d "$$DB_NAME"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
