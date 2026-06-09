@@ -1,0 +1,29 @@
+export enum ResolutionType {
+  REFUND = 'REFUND',
+  EXCHANGE = 'EXCHANGE',
+}
+
+export enum ReturnStatus {
+  REQUESTED = 'REQUESTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  AWAITING_ITEMS = 'AWAITING_ITEMS',
+  RECEIVED = 'RECEIVED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ReturnReason {
+  DAMAGED = 'DAMAGED',
+  WRONG_ITEM = 'WRONG_ITEM',
+  WRONG_SIZE = 'WRONG_SIZE',
+  NOT_AS_DESCRIBED = 'NOT_AS_DESCRIBED',
+  CHANGED_MIND = 'CHANGED_MIND',
+  OTHER = 'OTHER',
+}
+
+export enum ItemCondition {
+  SELLABLE = 'SELLABLE',
+  DAMAGED = 'DAMAGED',
+  UNSELLABLE = 'UNSELLABLE',
+}

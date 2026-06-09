@@ -1,0 +1,31 @@
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  PROCESSING = 'PROCESSING',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  READY_FOR_PICKUP = 'READY_FOR_PICKUP',
+  PICKED_UP = 'PICKED_UP',
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED',
+  RETURNED = 'RETURNED',
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
+}
+
+export enum FulfillmentMethod {
+  DELIVERY = 'DELIVERY',
+  PICKUP = 'PICKUP',
+}
+
+export enum PaymentMethod {
+  ESEWA = 'ESEWA',
+  KHALTI = 'KHALTI',
+  COD = 'COD',
+}

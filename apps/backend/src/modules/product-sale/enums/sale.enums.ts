@@ -1,0 +1,10 @@
+export enum SaleType {
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED_AMOUNT = 'FIXED_AMOUNT',
+}
+
+export enum SaleScope {
+  PRODUCTS = 'PRODUCTS',
+  CATEGORIES = 'CATEGORIES',
+  STORE_WIDE = 'STORE_WIDE',
+}

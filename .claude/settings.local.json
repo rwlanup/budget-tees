@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter backend add @nestjs/jwt @nestjs/passport passport passport-jwt argon2 @nestjs/throttler class-validator class-transformer @nestjs/event-emitter @nestjs/schedule @nestjs/bullmq bullmq ioredis libphonenumber-js nodemailer)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm migration:run)",
+      "Bash(pnpm seed *)",
+      "Bash(docker compose *)",
+      "Bash(pnpm --filter backend migration:run)",
+      "Bash(pnpm --filter backend build)",
+      "Bash(pnpm --filter backend seed)"
+    ]
+  }
+}
