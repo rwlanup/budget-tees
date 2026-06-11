@@ -1,5 +1,4 @@
 import {
-  ArrayNotEmpty,
   ArrayUnique,
   IsArray,
   IsBoolean,
@@ -24,6 +23,7 @@ export class CreateSkuDto {
   @IsUUID('4', { each: true })
   attributeValueIds: string[];
 
+  @IsOptional() @IsString() @Length(1, 200) name?: string;
   @IsOptional() @IsString() @Length(1, 64) sku?: string;
   @IsOptional() @IsString() @Length(1, 64) barcode?: string;
   @IsNumber() @Min(0) price: number;
@@ -37,6 +37,7 @@ export class CreateSkuDto {
 }
 
 export class UpdateSkuDto {
+  @IsOptional() @IsString() @Length(1, 200) name?: string;
   @IsOptional() @IsString() @Length(1, 64) sku?: string;
   @IsOptional() @IsString() @Length(1, 64) barcode?: string;
   @IsOptional() @IsNumber() @Min(0) price?: number;

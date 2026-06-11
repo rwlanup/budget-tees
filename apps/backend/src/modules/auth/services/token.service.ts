@@ -32,13 +32,10 @@ export class TokenService {
   }
 
   signAccessToken(payload: { sub: string; roleId: string }): string {
-    return this.jwt.sign(
-      { sub: payload.sub, roleId: payload.roleId, type: 'access' },
-      {
-        secret: this.config.get<string>('jwt.accessSecret'),
-        expiresIn: this.config.get<string>('jwt.accessTtl') ?? '15m',
-      } as Record<string, unknown>,
-    );
+    return this.jwt.sign({ sub: payload.sub, roleId: payload.roleId, type: 'access' }, {
+      secret: this.config.get<string>('jwt.accessSecret'),
+      expiresIn: this.config.get<string>('jwt.accessTtl') ?? '15m',
+    } as Record<string, unknown>);
   }
 
   accessTtlSeconds(): number {

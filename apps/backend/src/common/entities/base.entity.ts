@@ -1,8 +1,4 @@
-import {
-  CreateDateColumn,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 /** Base for entities with uuid PK + created/updated timestamps. */
 export abstract class BaseEntity {

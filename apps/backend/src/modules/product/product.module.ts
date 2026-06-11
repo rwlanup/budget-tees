@@ -21,6 +21,6 @@ import { MediaModule } from '../media/media.module';
   ],
   controllers: [ProductController, AdminProductController],
   providers: [ProductService, ProductMediaService],
-  exports: [ProductService],
+  exports: [ProductService, ProductMediaService],
 })
 export class ProductModule {}

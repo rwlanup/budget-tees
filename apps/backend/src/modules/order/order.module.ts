@@ -6,6 +6,7 @@ import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { CheckoutService } from './services/checkout.service';
 import { OrderService } from './services/order.service';
 import { OrderStatusService } from './services/order-status.service';
+import { InvoiceService } from './services/invoice.service';
 import { OrderController } from './controllers/order.controller';
 import { AdminOrderController } from './controllers/admin-order.controller';
 import { CartModule } from '../cart/cart.module';
@@ -16,10 +17,12 @@ import { TaxModule } from '../tax/tax.module';
 import { LocationModule } from '../location/location.module';
 import { CategoryModule } from '../category/category.module';
 import { CouponModule } from '../coupon/coupon.module';
+import { AttributeValue } from '../attribute/entities/attribute-value.entity';
+import { MediaModule } from '../media/media.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory]),
+    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, AttributeValue]),
     CartModule,
     ProductModule,
     SkuModule,
@@ -28,9 +31,10 @@ import { CouponModule } from '../coupon/coupon.module';
     LocationModule,
     CategoryModule,
     CouponModule,
+    MediaModule,
   ],
   controllers: [OrderController, AdminOrderController],
-  providers: [CheckoutService, OrderService, OrderStatusService],
+  providers: [CheckoutService, OrderService, OrderStatusService, InvoiceService],
   exports: [OrderService],
 })
 export class OrderModule {}

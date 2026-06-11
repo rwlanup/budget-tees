@@ -7,12 +7,14 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Category } from '../../category/entities/category.entity';
 import { Brand } from '../../brand/entities/brand.entity';
 import { Tag } from '../../tag/entities/tag.entity';
 import { ProductStatus, ProductType } from '../enums/product.enums';
+import { Sku } from '../../sku/entities/sku.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
@@ -80,4 +82,7 @@ export class Product extends BaseEntity {
     inverseJoinColumn: { name: 'tagId', referencedColumnName: 'id' },
   })
   tags: Tag[];
+
+  @OneToMany(() => Sku, (sku) => sku.product)
+  skus: Sku[];
 }

@@ -1,5 +1,6 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { Product } from '../../product/entities/product.entity';
 
 // numeric(12,2) comes back as string from pg — coerce to number.
 const numeric = {
@@ -21,16 +22,32 @@ export class Sku extends BaseEntity {
   @Column({ type: 'varchar', length: 64 })
   sku: string;
 
+  // Human-facing variant name. Auto-derived ("<product> <value> <value>") when not supplied.
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  name: string | null;
+
   @Column({ type: 'varchar', length: 64, nullable: true })
   barcode: string | null;
 
   @Column({ type: 'numeric', precision: 12, scale: 2, transformer: numeric })
   price: number;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   compareAtPrice: number | null;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   costPrice: number | null;
 
   @Column({ type: 'int', default: 0 })
@@ -62,4 +79,7 @@ export class Sku extends BaseEntity {
   get available(): number {
     return this.stock - this.reserved;
   }
+
+  @ManyToOne(() => Product, (product) => product.skus)
+  product: Product;
 }

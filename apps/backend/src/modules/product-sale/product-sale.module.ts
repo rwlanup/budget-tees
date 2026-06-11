@@ -1,11 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Sale } from './entities/sale.entity';
-import {
-  SaleCategory,
-  SaleExcludedProduct,
-  SaleProduct,
-} from './entities/sale-links.entity';
+import { SaleCategory, SaleExcludedProduct, SaleProduct } from './entities/sale-links.entity';
 import { SaleService } from './services/sale.service';
 import { SaleResolverService } from './services/sale-resolver.service';
 import { AdminSaleController, PublicSaleController } from './product-sale.controller';

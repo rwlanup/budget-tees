@@ -1,10 +1,6 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { Sku } from '../entities/sku.entity';
 import { SkuAttributeValue } from '../entities/sku-attribute-value.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
@@ -14,6 +10,7 @@ import { ProductAttributeService } from '../../attribute/services/product-attrib
 import { AttributeService } from '../../attribute/services/attribute.service';
 import { slugify } from '../../../common/utils/slugify';
 import { CreateSkuDto, GenerateSkusDto, UpdateSkuDto, AdjustStockDto } from '../dto/sku.dto';
+import { Product } from '../../product/entities/product.entity';
 
 @Injectable()
 export class SkuService {
@@ -47,11 +44,13 @@ export class SkuService {
   }
 
   async create(productId: string, dto: CreateSkuDto): Promise<Sku> {
-    await this.products.findOneByIdOrSlug(productId, false);
+    const product = await this.products.findOneByIdOrSlug(productId, false);
     await this.assertComboUnique(productId, dto.attributeValueIds);
     const code = dto.sku ?? (await this.generateCode(productId, dto.attributeValueIds));
+    const name = dto.name?.trim() || (await this.autoName(product.name, dto.attributeValueIds));
     return this.persistSku(productId, {
       sku: code,
+      name,
       barcode: dto.barcode ?? null,
       price: dto.price,
       compareAtPrice: dto.compareAtPrice ?? null,
@@ -66,7 +65,7 @@ export class SkuService {
   }
 
   async generate(productId: string, dto: GenerateSkusDto) {
-    await this.products.findOneByIdOrSlug(productId, false);
+    const product = await this.products.findOneByIdOrSlug(productId, false);
     const axes = await this.productAttributes.getVariationAxes(productId);
     const combos = axes.length ? cartesian(axes.map((a) => a.valueIds)) : [[]];
     const existing = await this.existingCombos(productId);
@@ -81,6 +80,7 @@ export class SkuService {
       }
       const sku = await this.persistSku(productId, {
         sku: await this.generateCode(productId, combo, dto.skuCodePrefix),
+        name: await this.autoName(product.name, combo),
         barcode: null,
         price: dto.defaultPrice ?? 0,
         compareAtPrice: null,
@@ -102,6 +102,7 @@ export class SkuService {
     const sku = await this.findOne(id);
     Object.assign(sku, {
       sku: dto.sku ?? sku.sku,
+      name: dto.name ?? sku.name,
       barcode: dto.barcode ?? sku.barcode,
       price: dto.price ?? sku.price,
       compareAtPrice: dto.compareAtPrice ?? sku.compareAtPrice,
@@ -125,13 +126,19 @@ export class SkuService {
     try {
       await this.repo.remove(sku);
     } catch (err) {
-      if (err instanceof QueryFailedError && (err as unknown as { code?: string }).code === '23503') {
+      if (
+        err instanceof QueryFailedError &&
+        (err as unknown as { code?: string }).code === '23503'
+      ) {
         throw new ConflictException('SKU is referenced by orders; deactivate it instead');
       }
       throw err;
     }
     if (sku.isDefault) {
-      const next = await this.repo.findOne({ where: { productId: sku.productId }, order: { createdAt: 'ASC' } });
+      const next = await this.repo.findOne({
+        where: { productId: sku.productId },
+        order: { createdAt: 'ASC' },
+      });
       await this.products.setDefaultSku(sku.productId, next?.id ?? null);
       if (next) {
         next.isDefault = true;
@@ -141,7 +148,12 @@ export class SkuService {
   }
 
   adjustStock(id: string, dto: AdjustStockDto, by?: string) {
-    return this.inventory.adjust(id, { delta: dto.delta, setTo: dto.setTo, reason: dto.reason, by });
+    return this.inventory.adjust(id, {
+      delta: dto.delta,
+      setTo: dto.setTo,
+      reason: dto.reason,
+      by,
+    });
   }
 
   movements(skuId: string): Promise<StockMovement[]> {
@@ -167,19 +179,34 @@ export class SkuService {
     return this.dataSource.transaction(async (mgr) => {
       const count = await mgr.getRepository(Sku).count({ where: { productId } });
       const isFirst = count === 0;
-      const sku = await mgr.getRepository(Sku).save(
-        mgr.getRepository(Sku).create({ ...skuData, productId, isDefault: isFirst }),
-      );
+      const sku = await mgr.getRepository(Sku).save({ ...skuData, productId, isDefault: isFirst });
       if (attributeValueIds.length) {
-        await mgr.getRepository(SkuAttributeValue).save(
-          attributeValueIds.map((vid) =>
-            mgr.getRepository(SkuAttributeValue).create({ skuId: sku.id, attributeValueId: vid }),
-          ),
-        );
+        await mgr
+          .getRepository(SkuAttributeValue)
+          .save(
+            attributeValueIds.map((vid) =>
+              mgr.getRepository(SkuAttributeValue).create({ skuId: sku.id, attributeValueId: vid }),
+            ),
+          );
       }
-      if (isFirst) await this.products.setDefaultSku(productId, sku.id);
+      if (isFirst)
+        await mgr.getRepository(Product).update(productId, {
+          defaultSkuId: sku.id,
+        });
       return sku;
     });
+  }
+
+  /** "<product> <value> <value>" — values in combo order. valuesByIds ignores order, so reorder. */
+  private async autoName(productName: string, valueIds: string[]): Promise<string> {
+    if (!valueIds.length) return productName;
+    const values = await this.attributes.valuesByIds(valueIds);
+    const byId = new Map(values.map((v) => [v.id, v.value]));
+    const labels = valueIds.map((id) => byId.get(id)).filter((v): v is string => Boolean(v));
+
+    const labelsPart = labels.length ? `(${labels.join(', ')})` : '';
+
+    return [productName, labelsPart].join(' ');
   }
 
   private async existingCombos(productId: string): Promise<Set<string>> {
@@ -192,14 +219,19 @@ export class SkuService {
   private async assertComboUnique(productId: string, valueIds: string[]): Promise<void> {
     const key = [...valueIds].sort().join('|');
     const existing = await this.existingCombos(productId);
-    if (existing.has(key)) throw new ConflictException('A SKU with this variant combination already exists');
+    if (existing.has(key))
+      throw new ConflictException('A SKU with this variant combination already exists');
   }
 
-  private async generateCode(productId: string, valueIds: string[], prefix?: string): Promise<string> {
+  private async generateCode(
+    productId: string,
+    valueIds: string[],
+    prefix?: string,
+  ): Promise<string> {
     const product = await this.products.findOneByIdOrSlug(productId, false);
     const values = valueIds.length ? await this.attributes.valuesByIds(valueIds) : [];
     const parts = [prefix ?? product.slug, ...values.map((v) => v.slug)].filter(Boolean);
-    let base = slugify(parts.join('-')).toUpperCase().replace(/-/g, '-');
+    const base = slugify(parts.join('-')).toUpperCase().replace(/-/g, '-');
     let candidate = base || `SKU-${Date.now()}`;
     let n = 2;
     while (await this.repo.findOne({ where: { sku: candidate } })) {

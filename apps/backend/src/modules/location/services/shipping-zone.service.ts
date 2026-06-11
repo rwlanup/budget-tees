@@ -22,8 +22,9 @@ export class ShippingZoneService {
   }
 
   async create(dto: CreateZoneDto): Promise<ShippingZone> {
-    return this.dataSource.transaction(async (mgr) => {
-      const zone = await mgr.getRepository(ShippingZone).save(
+    let zone: ShippingZone;
+    await this.dataSource.transaction(async (mgr) => {
+      zone = await mgr.getRepository(ShippingZone).save(
         mgr.getRepository(ShippingZone).create({
           name: dto.name,
           countryCode: dto.countryCode.toUpperCase(),
@@ -35,23 +36,25 @@ export class ShippingZoneService {
         }),
       );
       if (!zone.isCountryWide && dto.regions?.length) {
-        await mgr.getRepository(ShippingZoneRegion).save(
-          dto.regions.map((region) => ({ zoneId: zone.id, region })),
-        );
+        await mgr
+          .getRepository(ShippingZoneRegion)
+          .save(dto.regions.map((region) => ({ zoneId: zone.id, region })));
       }
-      return this.findOne(zone.id);
     });
+    return this.findOne(zone!.id);
   }
 
   async update(id: string, dto: UpdateZoneDto): Promise<ShippingZone> {
     const zone = await this.findOne(id);
-    return this.dataSource.transaction(async (mgr) => {
+    await this.dataSource.transaction(async (mgr) => {
       Object.assign(zone, {
         name: dto.name ?? zone.name,
         isCountryWide: dto.isCountryWide ?? zone.isCountryWide,
         flatRate: dto.flatRate ?? zone.flatRate,
         freeShippingThreshold:
-          dto.freeShippingThreshold !== undefined ? dto.freeShippingThreshold : zone.freeShippingThreshold,
+          dto.freeShippingThreshold !== undefined
+            ? dto.freeShippingThreshold
+            : zone.freeShippingThreshold,
         isActive: dto.isActive ?? zone.isActive,
         sortOrder: dto.sortOrder ?? zone.sortOrder,
       });
@@ -59,13 +62,13 @@ export class ShippingZoneService {
       if (dto.regions) {
         await mgr.getRepository(ShippingZoneRegion).delete({ zoneId: id });
         if (!zone.isCountryWide && dto.regions.length) {
-          await mgr.getRepository(ShippingZoneRegion).save(
-            dto.regions.map((region) => ({ zoneId: id, region })),
-          );
+          await mgr
+            .getRepository(ShippingZoneRegion)
+            .save(dto.regions.map((region) => ({ zoneId: id, region })));
         }
       }
-      return this.findOne(id);
     });
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {

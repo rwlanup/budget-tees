@@ -17,10 +17,7 @@ export class ProductAttributeController {
 
   @Put()
   @Permissions(PERMISSIONS.PRODUCT_MANAGE)
-  set(
-    @Param('productId', ParseUUIDPipe) productId: string,
-    @Body() dto: SetProductAttributesDto,
-  ) {
+  set(@Param('productId', ParseUUIDPipe) productId: string, @Body() dto: SetProductAttributesDto) {
     return this.productAttributes.setForProduct(productId, dto);
   }
 }

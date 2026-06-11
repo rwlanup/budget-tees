@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { Coupon } from './entities/coupon.entity';
 import { CouponCategory, CouponProduct, CouponRedemption } from './entities/coupon-links.entity';
-import { RedemptionStatus } from './enums/coupon.enums';
 import { CreateCouponDto, ListCouponQueryDto, UpdateCouponDto } from './dto/coupon.dto';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
 
@@ -116,10 +115,14 @@ export class CouponService {
     categoryIds?: string[],
   ): Promise<void> {
     if (productIds?.length) {
-      await mgr.getRepository(CouponProduct).save(productIds.map((productId) => ({ couponId, productId })));
+      await mgr
+        .getRepository(CouponProduct)
+        .save(productIds.map((productId) => ({ couponId, productId })));
     }
     if (categoryIds?.length) {
-      await mgr.getRepository(CouponCategory).save(categoryIds.map((categoryId) => ({ couponId, categoryId })));
+      await mgr
+        .getRepository(CouponCategory)
+        .save(categoryIds.map((categoryId) => ({ couponId, categoryId })));
     }
   }
 }

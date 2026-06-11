@@ -1,7 +1,9 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { PaymentMethod } from '../../order/enums/order.enums';
 import { PaymentRecordStatus } from '../enums/payment.enums';
+import { Order } from '../../order/entities/order.entity';
+import { PaymentRefund } from './payment-refund.entity';
 
 const numeric = {
   to: (v: number) => v,
@@ -13,6 +15,10 @@ export class Payment extends BaseEntity {
   @Index()
   @Column({ type: 'uuid' })
   orderId: string;
+
+  @ManyToOne(() => Order, (o) => o.payments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'orderId' })
+  order: Order;
 
   @Column({ type: 'enum', enum: PaymentMethod })
   method: PaymentMethod;
@@ -49,4 +55,7 @@ export class Payment extends BaseEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   failedAt: Date | null;
+
+  @OneToMany(() => PaymentRefund, (r) => r.payment)
+  refunds: PaymentRefund[];
 }

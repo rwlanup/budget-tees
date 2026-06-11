@@ -1,12 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsUUID,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsOptional, IsUUID, ValidateNested } from 'class-validator';
 
 export class AddFeaturedDto {
   @IsUUID() productId: string;

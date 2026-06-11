@@ -29,7 +29,9 @@ export class CreateEmailLogs1710000000022 implements MigrationInterface {
     `);
     await queryRunner.query(`CREATE INDEX "idx_email_logs_status" ON "email_logs" ("status")`);
     await queryRunner.query(`CREATE INDEX "idx_email_logs_template" ON "email_logs" ("template")`);
-    await queryRunner.query(`CREATE INDEX "idx_email_logs_ref" ON "email_logs" ("refType", "refId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_email_logs_ref" ON "email_logs" ("refType", "refId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, QueryFailedError, Repository } from 'typeorm';
 import { Attribute } from '../entities/attribute.entity';
@@ -116,7 +112,10 @@ export class AttributeService {
     try {
       await fn();
     } catch (err) {
-      if (err instanceof QueryFailedError && (err as unknown as { code?: string }).code === '23503') {
+      if (
+        err instanceof QueryFailedError &&
+        (err as unknown as { code?: string }).code === '23503'
+      ) {
         throw new ConflictException(msg);
       }
       throw err;

@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Setting } from '../entities/setting.entity';
@@ -62,8 +57,17 @@ export class SettingsService {
   getReturnWindowDays = () => this.getNumber('returns.windowDays');
 
   /** Full effective settings (persisted value or default) for admin. */
-  async getAllForAdmin(group?: string): Promise<
-    { key: string; value: unknown; type: SettingType; group: string; isPublic: boolean; description: string }[]
+  async getAllForAdmin(
+    group?: string,
+  ): Promise<
+    {
+      key: string;
+      value: unknown;
+      type: SettingType;
+      group: string;
+      isPublic: boolean;
+      description: string;
+    }[]
   > {
     await this.ensureLoaded();
     return Object.values(SETTINGS_SCHEMA)
@@ -123,8 +127,7 @@ export class SettingsService {
   }
 
   private validateType(def: SettingDefinition, value: unknown): void {
-    const fail = () =>
-      new BadRequestException(`Setting ${def.key} expects type ${def.type}`);
+    const fail = () => new BadRequestException(`Setting ${def.key} expects type ${def.type}`);
     switch (def.type) {
       case SettingType.STRING:
         if (typeof value !== 'string') throw fail();

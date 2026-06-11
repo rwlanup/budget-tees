@@ -42,7 +42,9 @@ export class CreatePayments1710000000020 implements MigrationInterface {
         "createdAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_refunds_payment" ON "payment_refunds" ("paymentId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_refunds_payment" ON "payment_refunds" ("paymentId")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "payment_events" (
@@ -55,7 +57,9 @@ export class CreatePayments1710000000020 implements MigrationInterface {
         "receivedAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_payment_events_payment" ON "payment_events" ("paymentId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_payment_events_payment" ON "payment_events" ("paymentId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

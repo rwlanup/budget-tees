@@ -38,6 +38,22 @@ export class ProductMediaService {
     return result;
   }
 
+  async getPrimaryMedia(productId: string) {
+    const row = await this.repo.findOne({
+      where: { productId, isPrimary: true },
+    });
+
+    if (!row) return null;
+    const m = await this.media.findOne(row.mediaId).catch(() => null);
+    if (!m) return null;
+    return {
+      mediaId: row.mediaId,
+      sortOrder: row.sortOrder,
+      isPrimary: row.isPrimary,
+      url: m.url,
+    };
+  }
+
   /** Replace the full gallery in one transaction; enforces exactly one primary. */
   async setGallery(productId: string, dto: SetProductMediaDto) {
     if (dto.items.length) {

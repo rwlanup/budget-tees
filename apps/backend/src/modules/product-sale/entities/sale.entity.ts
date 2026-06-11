@@ -22,7 +22,13 @@ export class Sale extends BaseEntity {
   @Column({ type: 'numeric', precision: 12, scale: 2, transformer: numeric })
   value: number;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   maxDiscountAmount: number | null;
 
   @Column({ type: 'enum', enum: SaleScope })

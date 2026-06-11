@@ -26,6 +26,5 @@ export enum FulfillmentMethod {
 
 export enum PaymentMethod {
   ESEWA = 'ESEWA',
-  KHALTI = 'KHALTI',
   COD = 'COD',
 }

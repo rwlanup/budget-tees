@@ -29,7 +29,9 @@ export class CreateLocation1710000000015 implements MigrationInterface {
         "updatedAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_user_addresses_user" ON "user_addresses" ("userId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_user_addresses_user" ON "user_addresses" ("userId")`,
+    );
     await queryRunner.query(
       `CREATE UNIQUE INDEX "uq_user_address_default" ON "user_addresses" ("userId", "type") WHERE "isDefault"`,
     );
@@ -61,8 +63,12 @@ export class CreateLocation1710000000015 implements MigrationInterface {
         "updatedAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_zone_regions_zone" ON "shipping_zone_regions" ("zoneId")`);
-    await queryRunner.query(`CREATE INDEX "idx_zone_regions_region" ON "shipping_zone_regions" ("region")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_zone_regions_zone" ON "shipping_zone_regions" ("zoneId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_zone_regions_region" ON "shipping_zone_regions" ("region")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "pickup_locations" (

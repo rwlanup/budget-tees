@@ -29,8 +29,8 @@ export const jwtConfig = registerAs('jwt', () => ({
 }));
 
 export const smtpConfig = registerAs('smtp', () => ({
-  host: process.env.SMTP_HOST ?? 'localhost',
-  port: parseInt(process.env.SMTP_PORT ?? '1025', 10),
+  host: process.env.SMTP_HOST ?? 'sandbox.smtp.mailtrap.io',
+  port: parseInt(process.env.SMTP_PORT ?? '2525', 10),
   user: process.env.SMTP_USER ?? '',
   password: process.env.SMTP_PASSWORD ?? '',
   fromName: process.env.SMTP_FROM_NAME ?? 'Budget Tees',
@@ -53,13 +53,13 @@ export const paymentConfig = registerAs('payment', () => ({
   baseReturnUrl: process.env.PAYMENT_RETURN_URL ?? 'http://localhost:4000/api/payments',
   websiteUrl: process.env.PAYMENT_WEBSITE_URL ?? 'http://localhost:3000',
   esewa: {
+    // eSewa ePay v2. `secret` = the merchant secret key (HMAC-SHA256 signing key).
     productCode: process.env.ESEWA_PRODUCT_CODE ?? 'EPAYTEST',
     secret: process.env.ESEWA_SECRET ?? '8gBm/:&EnhH.1/q',
-    formUrl: process.env.ESEWA_FORM_URL ?? 'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
-  },
-  khalti: {
-    secret: process.env.KHALTI_SECRET ?? '',
-    baseUrl: process.env.KHALTI_BASE_URL ?? 'https://dev.khalti.com/api/v2',
+    formUrl:
+      process.env.ESEWA_FORM_URL ?? 'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
+    statusUrl:
+      process.env.ESEWA_STATUS_URL ?? 'https://rc.esewa.com.np/api/epay/transaction/status/',
   },
 }));
 

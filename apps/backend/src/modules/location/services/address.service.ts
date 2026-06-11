@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UserAddress } from '../entities/user-address.entity';
 import { ShippingCountryService } from '../../settings/services/shipping-country.service';
 import { CreateAddressDto, UpdateAddressDto } from '../dto/location.dto';
@@ -32,12 +32,13 @@ export class AddressService {
   async update(userId: string, id: string, dto: UpdateAddressDto): Promise<UserAddress> {
     const addr = await this.findOwned(userId, id);
     if (dto.isDefault === true) {
-      await this.clearDefault(userId, addr.type);
+      await this.clearDefault(userId, dto.type ?? addr.type);
       addr.isDefault = true;
     } else if (dto.isDefault === false) {
       addr.isDefault = false;
     }
     Object.assign(addr, {
+      type: dto.type ?? addr.type,
       label: dto.label ?? addr.label,
       recipientName: dto.recipientName ?? addr.recipientName,
       phone: dto.phone ?? addr.phone,
@@ -76,6 +77,9 @@ export class AddressService {
   }
 
   private async clearDefault(userId: string, type: UserAddress['type']): Promise<void> {
-    await this.repo.update({ userId, type, isDefault: true }, { isDefault: false });
+    await this.repo.update(
+      { userId, type: type === 'BOTH' ? In(['SHIPPING', 'BILLING']) : In([type, 'BOTH']), isDefault: true },
+      { isDefault: false },
+    );
   }
 }

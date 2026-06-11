@@ -47,7 +47,10 @@ export class SaleResolverService {
     const product = await this.products.findOneByIdOrSlug(productId, false).catch(() => null);
     if (!product) return none;
 
-    const lineage = [product.categoryId, ...(await this.categories.ancestors(product.categoryId)).map((c) => c.id)];
+    const lineage = [
+      product.categoryId,
+      ...(await this.categories.ancestors(product.categoryId)).map((c) => c.id),
+    ];
     const saleIds = active.map((s) => s.id);
 
     const [productLinks, excludedLinks, categoryLinks] = await Promise.all([

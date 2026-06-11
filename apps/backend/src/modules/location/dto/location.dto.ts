@@ -1,6 +1,4 @@
-import { Type } from 'class-transformer';
 import {
-  ArrayNotEmpty,
   IsArray,
   IsBoolean,
   IsEmail,
@@ -9,6 +7,7 @@ import {
   IsNumber,
   IsObject,
   IsOptional,
+  IsPhoneNumber,
   IsString,
   Length,
   Min,
@@ -19,7 +18,7 @@ export class CreateAddressDto {
   @IsEnum(AddressType) type: AddressType;
   @IsOptional() @IsString() @Length(0, 40) label?: string;
   @IsString() @Length(1, 120) recipientName: string;
-  @IsString() @Length(5, 20) phone: string;
+  @IsString() @IsPhoneNumber('NP') phone: string;
   @IsOptional() @IsEmail() email?: string;
   @IsString() @Length(1, 180) line1: string;
   @IsOptional() @IsString() @Length(0, 180) line2?: string;
@@ -32,14 +31,16 @@ export class CreateAddressDto {
 }
 
 export class UpdateAddressDto {
+  @IsOptional() @IsEnum(AddressType) type: AddressType;
   @IsOptional() @IsString() @Length(0, 40) label?: string;
   @IsOptional() @IsString() @Length(1, 120) recipientName?: string;
-  @IsOptional() @IsString() @Length(5, 20) phone?: string;
+  @IsOptional() @IsPhoneNumber('NP') phone?: string;
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsString() @Length(1, 180) line1?: string;
   @IsOptional() @IsString() @Length(0, 180) line2?: string;
   @IsOptional() @IsString() @Length(1, 100) city?: string;
   @IsOptional() @IsString() @Length(0, 100) region?: string;
+  @IsOptional() @IsISO31661Alpha2() countryCode: string;
   @IsOptional() @IsString() @Length(0, 20) postalCode?: string;
   @IsOptional() @IsString() @Length(0, 180) nearestLandmark?: string;
   @IsOptional() @IsBoolean() isDefault?: boolean;
@@ -58,6 +59,7 @@ export class CreateZoneDto {
 
 export class UpdateZoneDto {
   @IsOptional() @IsString() @Length(2, 100) name?: string;
+  @IsOptional() @IsISO31661Alpha2() countryCode: string;
   @IsOptional() @IsBoolean() isCountryWide?: boolean;
   @IsOptional() @IsArray() @IsString({ each: true }) regions?: string[];
   @IsOptional() @IsNumber() @Min(0) flatRate?: number;
@@ -88,6 +90,7 @@ export class UpdatePickupDto {
   @IsOptional() @IsString() @Length(1, 180) line1?: string;
   @IsOptional() @IsString() @Length(1, 100) city?: string;
   @IsOptional() @IsString() @Length(0, 100) region?: string;
+  @IsOptional() @IsISO31661Alpha2() countryCode: string;
   @IsOptional() @IsString() @Length(0, 20) postalCode?: string;
   @IsOptional() @IsString() latitude?: string;
   @IsOptional() @IsString() longitude?: string;

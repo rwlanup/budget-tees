@@ -4,9 +4,7 @@ export class CreateMedia1710000000003 implements MigrationInterface {
   name = 'CreateMedia1710000000003';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `CREATE TYPE "media_type_enum" AS ENUM ('IMAGE','VIDEO','DOCUMENT')`,
-    );
+    await queryRunner.query(`CREATE TYPE "media_type_enum" AS ENUM ('IMAGE','VIDEO','DOCUMENT')`);
     await queryRunner.query(
       `CREATE TYPE "media_status_enum" AS ENUM ('PROCESSING','READY','FAILED')`,
     );

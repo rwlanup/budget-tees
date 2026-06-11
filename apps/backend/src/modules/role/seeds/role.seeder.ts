@@ -21,7 +21,9 @@ export const roleSeeder: Seeder = {
     }
 
     const allPerms = await permRepo.find();
-    const customerPerms = allPerms.filter((p) => (CUSTOMER_PERMISSIONS as string[]).includes(p.key));
+    const customerPerms = allPerms.filter((p) =>
+      (CUSTOMER_PERMISSIONS as string[]).includes(p.key),
+    );
 
     await upsertRole(roleRepo, SYSTEM_ROLES.ADMIN, 'Full administrative access', allPerms);
     await upsertRole(roleRepo, SYSTEM_ROLES.CUSTOMER, 'Default customer role', customerPerms);

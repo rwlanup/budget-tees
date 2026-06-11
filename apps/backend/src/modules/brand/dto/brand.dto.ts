@@ -1,13 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  IsUrl,
-  IsUUID,
-  Length,
-  Matches,
-} from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUrl, IsUUID, Length, Matches } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 export class CreateBrandDto {

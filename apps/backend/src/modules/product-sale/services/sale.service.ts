@@ -1,16 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, LessThanOrEqual, MoreThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { Sale } from '../entities/sale.entity';
-import {
-  SaleCategory,
-  SaleExcludedProduct,
-  SaleProduct,
-} from '../entities/sale-links.entity';
+import { SaleCategory, SaleExcludedProduct, SaleProduct } from '../entities/sale-links.entity';
 import { SaleScope, SaleType } from '../enums/sale.enums';
 import { CreateSaleDto, ListSaleQueryDto, UpdateSaleDto } from '../dto/sale.dto';
 import { paginate, PaginatedResult } from '../../../common/dto/pagination.dto';
@@ -26,7 +18,15 @@ export class SaleService {
   ) {}
 
   async create(dto: CreateSaleDto): Promise<Sale> {
-    this.validate(dto.type, dto.value, dto.scope, dto.startsAt, dto.endsAt, dto.productIds, dto.categoryIds);
+    this.validate(
+      dto.type,
+      dto.value,
+      dto.scope,
+      dto.startsAt,
+      dto.endsAt,
+      dto.productIds,
+      dto.categoryIds,
+    );
     return this.dataSource.transaction(async (mgr) => {
       const sale = await mgr.getRepository(Sale).save(
         mgr.getRepository(Sale).create({
@@ -40,7 +40,14 @@ export class SaleService {
           isActive: dto.isActive ?? true,
         }),
       );
-      await this.writeLinks(mgr, sale.id, dto.scope, dto.productIds, dto.categoryIds, dto.excludedProductIds);
+      await this.writeLinks(
+        mgr,
+        sale.id,
+        dto.scope,
+        dto.productIds,
+        dto.categoryIds,
+        dto.excludedProductIds,
+      );
       return sale;
     });
   }
@@ -70,7 +77,14 @@ export class SaleService {
         await mgr.getRepository(SaleProduct).delete({ saleId: id });
         await mgr.getRepository(SaleCategory).delete({ saleId: id });
         await mgr.getRepository(SaleExcludedProduct).delete({ saleId: id });
-        await this.writeLinks(mgr, id, sale.scope, dto.productIds, dto.categoryIds, dto.excludedProductIds);
+        await this.writeLinks(
+          mgr,
+          id,
+          sale.scope,
+          dto.productIds,
+          dto.categoryIds,
+          dto.excludedProductIds,
+        );
       }
       return sale;
     });
@@ -146,10 +160,14 @@ export class SaleService {
     excludedProductIds?: string[],
   ): Promise<void> {
     if (scope === SaleScope.PRODUCTS && productIds?.length) {
-      await mgr.getRepository(SaleProduct).save(productIds.map((productId) => ({ saleId, productId })));
+      await mgr
+        .getRepository(SaleProduct)
+        .save(productIds.map((productId) => ({ saleId, productId })));
     }
     if (scope === SaleScope.CATEGORIES && categoryIds?.length) {
-      await mgr.getRepository(SaleCategory).save(categoryIds.map((categoryId) => ({ saleId, categoryId })));
+      await mgr
+        .getRepository(SaleCategory)
+        .save(categoryIds.map((categoryId) => ({ saleId, categoryId })));
     }
     if (excludedProductIds?.length) {
       await mgr

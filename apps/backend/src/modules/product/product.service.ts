@@ -1,10 +1,6 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, In, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductStatus } from './enums/product.enums';
 import { CategoryService } from '../category/category.service';
@@ -158,7 +154,8 @@ export class ProductService {
       });
     }
     product.status = status;
-    if (status === ProductStatus.PUBLISHED && !product.publishedAt) product.publishedAt = new Date();
+    if (status === ProductStatus.PUBLISHED && !product.publishedAt)
+      product.publishedAt = new Date();
     return this.repo.save(product);
   }
 

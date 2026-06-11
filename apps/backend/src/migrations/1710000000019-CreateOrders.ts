@@ -10,12 +10,8 @@ export class CreateOrders1710000000019 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TYPE "order_payment_status_enum" AS ENUM ('UNPAID','PAID','FAILED','REFUNDED','PARTIALLY_REFUNDED')`,
     );
-    await queryRunner.query(
-      `CREATE TYPE "fulfillment_method_enum" AS ENUM ('DELIVERY','PICKUP')`,
-    );
-    await queryRunner.query(
-      `CREATE TYPE "payment_method_enum" AS ENUM ('ESEWA','KHALTI','COD')`,
-    );
+    await queryRunner.query(`CREATE TYPE "fulfillment_method_enum" AS ENUM ('DELIVERY','PICKUP')`);
+    await queryRunner.query(`CREATE TYPE "payment_method_enum" AS ENUM ('ESEWA','KHALTI','COD')`);
     await queryRunner.query(`CREATE SEQUENCE IF NOT EXISTS "order_number_seq" START 1`);
 
     await queryRunner.query(`
@@ -58,7 +54,9 @@ export class CreateOrders1710000000019 implements MigrationInterface {
     );
     await queryRunner.query(`CREATE INDEX "idx_orders_user" ON "orders" ("userId")`);
     await queryRunner.query(`CREATE INDEX "idx_orders_status" ON "orders" ("status")`);
-    await queryRunner.query(`CREATE INDEX "idx_orders_payment_status" ON "orders" ("paymentStatus")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_orders_payment_status" ON "orders" ("paymentStatus")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "order_items" (
@@ -106,7 +104,9 @@ export class CreateOrders1710000000019 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "coupon_redemptions" DROP CONSTRAINT "fk_redemptions_order"`);
+    await queryRunner.query(
+      `ALTER TABLE "coupon_redemptions" DROP CONSTRAINT "fk_redemptions_order"`,
+    );
     await queryRunner.query(`DROP TABLE "order_status_history"`);
     await queryRunner.query(`DROP TABLE "order_items"`);
     await queryRunner.query(`DROP TABLE "orders"`);

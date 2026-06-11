@@ -10,7 +10,10 @@ export interface AuthUser {
 
 /** Injects the authenticated user (set on request by JwtAuthGuard). */
 export const CurrentUser = createParamDecorator(
-  (data: keyof AuthUser | undefined, ctx: ExecutionContext): AuthUser | AuthUser[keyof AuthUser] => {
+  (
+    data: keyof AuthUser | undefined,
+    ctx: ExecutionContext,
+  ): AuthUser | AuthUser[keyof AuthUser] => {
     const request = ctx.switchToHttp().getRequest();
     const user = request.user as AuthUser;
     return data ? user?.[data] : user;

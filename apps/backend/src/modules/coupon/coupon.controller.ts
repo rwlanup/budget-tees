@@ -17,7 +17,12 @@ import { PERMISSIONS } from '../../common/constants/permissions';
 import { CouponService } from './coupon.service';
 import { CouponRedemptionService } from './coupon-redemption.service';
 import { CouponContextService } from './coupon-context.service';
-import { CreateCouponDto, ListCouponQueryDto, UpdateCouponDto, ValidateCouponDto } from './dto/coupon.dto';
+import {
+  CreateCouponDto,
+  ListCouponQueryDto,
+  UpdateCouponDto,
+  ValidateCouponDto,
+} from './dto/coupon.dto';
 
 @Controller('coupons')
 export class CouponValidationController {

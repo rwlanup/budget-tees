@@ -1,12 +1,8 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import {
-  FulfillmentMethod,
-  OrderStatus,
-  PaymentMethod,
-  PaymentStatus,
-} from '../enums/order.enums';
+import { FulfillmentMethod, OrderStatus, PaymentMethod, PaymentStatus } from '../enums/order.enums';
 import { OrderItem } from './order-item.entity';
+import { Payment } from '../../payment/entities/payment.entity';
 
 const numeric = {
   to: (v: number) => v,
@@ -116,4 +112,8 @@ export class Order extends BaseEntity {
 
   @OneToMany(() => OrderItem, (i) => i.order, { eager: true, cascade: true })
   items: OrderItem[];
+
+  /** Payment attempts/records for this order. Non-eager — loaded explicitly on detail reads. */
+  @OneToMany(() => Payment, (p) => p.order)
+  payments: Payment[];
 }

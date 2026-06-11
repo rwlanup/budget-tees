@@ -35,7 +35,9 @@ export class CreateSales1710000000014 implements MigrationInterface {
         PRIMARY KEY ("saleId", "productId")
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_sale_products_product" ON "sale_products" ("productId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_sale_products_product" ON "sale_products" ("productId")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "sale_categories" (

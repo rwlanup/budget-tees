@@ -44,7 +44,12 @@ export class EmailService {
     await this.queue.add(
       'send',
       { logId: log.id },
-      { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: true, removeOnFail: 100 },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: true,
+        removeOnFail: 100,
+      },
     );
     return log;
   }

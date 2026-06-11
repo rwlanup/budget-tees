@@ -40,7 +40,8 @@ export class EmailProcessor extends WorkerHost {
     } catch (err) {
       log.lastError = (err as Error).message?.slice(0, 500) ?? 'send failed';
       // After max attempts BullMQ stops retrying → mark DEAD.
-      log.status = job.attemptsMade + 1 >= (job.opts.attempts ?? 1) ? EmailStatus.DEAD : EmailStatus.FAILED;
+      log.status =
+        job.attemptsMade + 1 >= (job.opts.attempts ?? 1) ? EmailStatus.DEAD : EmailStatus.FAILED;
       await this.repo.save(log);
       throw err; // let BullMQ handle retry/backoff
     }

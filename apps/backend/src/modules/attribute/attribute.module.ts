@@ -11,12 +11,7 @@ import { ProductAttributeController } from './controllers/product-attribute.cont
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Attribute,
-      AttributeValue,
-      ProductAttribute,
-      ProductAttributeValue,
-    ]),
+    TypeOrmModule.forFeature([Attribute, AttributeValue, ProductAttribute, ProductAttributeValue]),
   ],
   controllers: [AttributeController, ProductAttributeController],
   providers: [AttributeService, ProductAttributeService],

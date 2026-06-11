@@ -68,7 +68,9 @@ export class CartService {
       existing.quantity = newQty;
       await this.itemRepo.save(existing);
     } else {
-      await this.itemRepo.save(this.itemRepo.create({ cartId: cart.id, skuId: dto.skuId, quantity: newQty }));
+      await this.itemRepo.save(
+        this.itemRepo.create({ cartId: cart.id, skuId: dto.skuId, quantity: newQty }),
+      );
     }
     await this.touch(cart.id);
     return { ...(await this.pricing.price(await this.reload(cart.id))), token };

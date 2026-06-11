@@ -19,7 +19,11 @@ export class CouponContextService {
     for (const line of priced.items) {
       if (line.unavailable) continue;
       const lineage = await this.categoryLineage(line.productId);
-      lines.push({ productId: line.productId, categoryLineage: lineage, lineTotal: line.lineTotal });
+      lines.push({
+        productId: line.productId,
+        categoryLineage: lineage,
+        lineTotal: line.lineTotal,
+      });
     }
     return { userId: ctx.userId, subtotal: priced.subtotal, lines };
   }

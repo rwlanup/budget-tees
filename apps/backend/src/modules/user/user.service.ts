@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -163,7 +162,12 @@ export class UserService {
     if (!adminRole || user.roleId !== adminRole.id) return; // not an admin → no constraint
     if (newRoleId && newRoleId === adminRole.id) return; // staying admin
     const activeAdmins = await this.repo.count({
-      where: { roleId: adminRole.id, status: UserStatus.ACTIVE, deletedAt: IsNull(), id: Not(user.id) },
+      where: {
+        roleId: adminRole.id,
+        status: UserStatus.ACTIVE,
+        deletedAt: IsNull(),
+        id: Not(user.id),
+      },
     });
     if (activeAdmins === 0) {
       throw new ConflictException('Cannot remove or disable the last active admin');

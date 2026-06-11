@@ -14,7 +14,9 @@ export class CreateWishlist1710000000017 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`CREATE INDEX "idx_wishlist_user" ON "wishlist_products" ("userId")`);
-    await queryRunner.query(`CREATE INDEX "idx_wishlist_product" ON "wishlist_products" ("productId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_wishlist_product" ON "wishlist_products" ("productId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

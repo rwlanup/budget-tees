@@ -29,7 +29,10 @@ export class InventoryService {
       const sku = await this.lock(m, skuId);
       const available = sku.stock - sku.reserved;
       if (!sku.allowBackorder && available < qty) {
-        throw new ConflictException({ code: 'INSUFFICIENT_STOCK', message: `SKU ${sku.sku} out of stock` });
+        throw new ConflictException({
+          code: 'INSUFFICIENT_STOCK',
+          message: `SKU ${sku.sku} out of stock`,
+        });
       }
       sku.reserved += qty;
       await m.getRepository(Sku).save(sku);

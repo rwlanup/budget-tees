@@ -1,9 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from '../user/user.service';
@@ -12,12 +7,7 @@ import { User } from '../user/entities/user.entity';
 import { PasswordService } from '../../common/security/password.service';
 import { TokenService } from './services/token.service';
 import { VerificationTokenType } from './enums/verification-token-type.enum';
-import {
-  ChangePasswordDto,
-  LoginDto,
-  RegisterDto,
-  ResetPasswordDto,
-} from './dto/auth.dto';
+import { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 
 export interface RequestMeta {
   userAgent?: string;
@@ -45,7 +35,12 @@ export class AuthService {
 
   async register(dto: RegisterDto): Promise<{ message: string }> {
     const user = await this.users.create(
-      { email: dto.email, password: dto.password, firstName: dto.firstName, lastName: dto.lastName },
+      {
+        email: dto.email,
+        password: dto.password,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+      },
       UserStatus.PENDING,
     );
     await this.sendVerification(user);

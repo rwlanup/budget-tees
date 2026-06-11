@@ -36,6 +36,12 @@ export class ReturnItem extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   restock: boolean;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   lineRefundAmount: number | null;
 }

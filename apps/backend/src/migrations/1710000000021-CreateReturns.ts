@@ -35,7 +35,9 @@ export class CreateReturns1710000000021 implements MigrationInterface {
         "updatedAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE UNIQUE INDEX "uq_return_number" ON "return_requests" ("returnNumber")`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX "uq_return_number" ON "return_requests" ("returnNumber")`,
+    );
     await queryRunner.query(`CREATE INDEX "idx_returns_order" ON "return_requests" ("orderId")`);
     await queryRunner.query(`CREATE INDEX "idx_returns_user" ON "return_requests" ("userId")`);
     await queryRunner.query(`CREATE INDEX "idx_returns_status" ON "return_requests" ("status")`);
@@ -55,8 +57,12 @@ export class CreateReturns1710000000021 implements MigrationInterface {
         "updatedAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_return_items_request" ON "return_items" ("returnRequestId")`);
-    await queryRunner.query(`CREATE INDEX "idx_return_items_order_item" ON "return_items" ("orderItemId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_return_items_request" ON "return_items" ("returnRequestId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_return_items_order_item" ON "return_items" ("orderItemId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

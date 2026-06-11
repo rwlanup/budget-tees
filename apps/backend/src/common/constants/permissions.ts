@@ -31,6 +31,9 @@ export const PERMISSIONS = {
   RETURN_CREATE_OWN: 'return.create.own',
   CART_MANAGE_OWN: 'cart.manage.own',
   WISHLIST_MANAGE_OWN: 'wishlist.manage.own',
+  REVIEW_CREATE_OWN: 'review.create.own',
+  REVIEW_MANAGE: 'review.manage',
+  CONTACT_MANAGE: 'contact.manage',
   // Config / infra
   SETTINGS_MANAGE: 'settings.manage',
   LOCATION_MANAGE: 'location.manage',
@@ -58,14 +61,41 @@ export const PERMISSION_CATALOG: { key: PermissionKey; group: string; descriptio
   { key: PERMISSIONS.ORDER_MANAGE, group: 'commerce', description: 'Manage all orders' },
   { key: PERMISSIONS.ORDER_CREATE_OWN, group: 'commerce', description: 'Place own orders' },
   { key: PERMISSIONS.ORDER_READ_OWN, group: 'commerce', description: 'View own orders' },
-  { key: PERMISSIONS.PAYMENT_MANAGE, group: 'commerce', description: 'Manage payments and refunds' },
+  {
+    key: PERMISSIONS.PAYMENT_MANAGE,
+    group: 'commerce',
+    description: 'Manage payments and refunds',
+  },
   { key: PERMISSIONS.RETURN_MANAGE, group: 'commerce', description: 'Manage all returns' },
   { key: PERMISSIONS.RETURN_CREATE_OWN, group: 'commerce', description: 'Request own returns' },
   { key: PERMISSIONS.CART_MANAGE_OWN, group: 'commerce', description: 'Manage own cart' },
   { key: PERMISSIONS.WISHLIST_MANAGE_OWN, group: 'commerce', description: 'Manage own wishlist' },
+  {
+    key: PERMISSIONS.REVIEW_CREATE_OWN,
+    group: 'commerce',
+    description: 'Write own product reviews',
+  },
+  {
+    key: PERMISSIONS.REVIEW_MANAGE,
+    group: 'commerce',
+    description: 'Moderate all product reviews',
+  },
+  {
+    key: PERMISSIONS.CONTACT_MANAGE,
+    group: 'commerce',
+    description: 'View and manage contact messages',
+  },
   { key: PERMISSIONS.SETTINGS_MANAGE, group: 'config', description: 'Manage store settings' },
-  { key: PERMISSIONS.LOCATION_MANAGE, group: 'config', description: 'Manage shipping zones and locations' },
-  { key: PERMISSIONS.EMAIL_MANAGE, group: 'config', description: 'Manage email logs and templates' },
+  {
+    key: PERMISSIONS.LOCATION_MANAGE,
+    group: 'config',
+    description: 'Manage shipping zones and locations',
+  },
+  {
+    key: PERMISSIONS.EMAIL_MANAGE,
+    group: 'config',
+    description: 'Manage email logs and templates',
+  },
 ];
 
 /** Customer role default permissions (own-scoped). Admin gets everything. */
@@ -76,6 +106,7 @@ export const CUSTOMER_PERMISSIONS: PermissionKey[] = [
   PERMISSIONS.RETURN_CREATE_OWN,
   PERMISSIONS.CART_MANAGE_OWN,
   PERMISSIONS.WISHLIST_MANAGE_OWN,
+  PERMISSIONS.REVIEW_CREATE_OWN,
 ];
 
 export const SYSTEM_ROLES = {

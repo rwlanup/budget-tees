@@ -28,7 +28,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   // Don't throw for optional-auth routes when no/invalid token; just leave user undefined.
-  handleRequest<TUser = unknown>(err: unknown, user: TUser, info: unknown, context: ExecutionContext): TUser {
+  handleRequest<TUser = unknown>(
+    err: unknown,
+    user: TUser,
+    info: unknown,
+    context: ExecutionContext,
+  ): TUser {
     if (this.isOptional(context)) {
       return (user ?? undefined) as TUser;
     }

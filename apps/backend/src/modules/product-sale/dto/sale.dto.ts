@@ -1,4 +1,3 @@
-import { Type } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
@@ -22,13 +21,22 @@ export class CreateSaleDto {
   @IsOptional() @IsNumber() @Min(0) maxDiscountAmount?: number;
   @IsEnum(SaleScope) scope: SaleScope;
 
-  @IsOptional() @IsArray() @ArrayUnique() @IsUUID('4', { each: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
   productIds?: string[];
 
-  @IsOptional() @IsArray() @ArrayUnique() @IsUUID('4', { each: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
   categoryIds?: string[];
 
-  @IsOptional() @IsArray() @ArrayUnique() @IsUUID('4', { each: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
   excludedProductIds?: string[];
 
   @IsDateString() startsAt: string;
@@ -42,7 +50,11 @@ export class UpdateSaleDto {
   @IsOptional() @IsNumber() @Min(0) maxDiscountAmount?: number;
   @IsOptional() @IsArray() @ArrayUnique() @IsUUID('4', { each: true }) productIds?: string[];
   @IsOptional() @IsArray() @ArrayUnique() @IsUUID('4', { each: true }) categoryIds?: string[];
-  @IsOptional() @IsArray() @ArrayUnique() @IsUUID('4', { each: true }) excludedProductIds?: string[];
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  excludedProductIds?: string[];
   @IsOptional() @IsDateString() startsAt?: string;
   @IsOptional() @IsDateString() endsAt?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;

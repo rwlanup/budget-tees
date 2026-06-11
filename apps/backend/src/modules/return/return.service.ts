@@ -89,7 +89,8 @@ export class ReturnService {
       refundTotal = addMoney(refundTotal, lineRefund);
 
       if (dto.resolutionType === ResolutionType.EXCHANGE) {
-        if (!input.exchangeSkuId) throw new BadRequestException('exchangeSkuId required for exchange');
+        if (!input.exchangeSkuId)
+          throw new BadRequestException('exchangeSkuId required for exchange');
         const exSku = await this.skus.findOne(input.exchangeSkuId);
         if (!exSku.isActive) throw new ConflictException('Exchange SKU is unavailable');
         priceDifference = addMoney(
@@ -134,7 +135,10 @@ export class ReturnService {
     return this.list(query);
   }
 
-  private async list(query: ListReturnsQueryDto, userId?: string): Promise<PaginatedResult<ReturnRequest>> {
+  private async list(
+    query: ListReturnsQueryDto,
+    userId?: string,
+  ): Promise<PaginatedResult<ReturnRequest>> {
     const [items, total] = await this.reqRepo.findAndCount({
       where: {
         ...(userId ? { userId } : {}),
@@ -167,7 +171,8 @@ export class ReturnService {
 
   async review(id: string, dto: ReviewReturnDto, adminId: string): Promise<ReturnRequest> {
     const req = await this.findOne(id);
-    if (req.status !== ReturnStatus.REQUESTED) throw new ConflictException('Return already reviewed');
+    if (req.status !== ReturnStatus.REQUESTED)
+      throw new ConflictException('Return already reviewed');
     req.status = dto.decision === 'APPROVE' ? ReturnStatus.AWAITING_ITEMS : ReturnStatus.REJECTED;
     req.adminNote = dto.adminNote ?? null;
     req.processedBy = adminId;
@@ -213,8 +218,18 @@ export class ReturnService {
           );
         }
         if (req.resolutionType === ResolutionType.EXCHANGE && item.exchangeSkuId) {
-          await this.inventory.reserve(item.exchangeSkuId, item.quantity, { refType: 'exchange', refId: req.id }, mgr);
-          await this.inventory.commit(item.exchangeSkuId, item.quantity, { refType: 'exchange', refId: req.id }, mgr);
+          await this.inventory.reserve(
+            item.exchangeSkuId,
+            item.quantity,
+            { refType: 'exchange', refId: req.id },
+            mgr,
+          );
+          await this.inventory.commit(
+            item.exchangeSkuId,
+            item.quantity,
+            { refType: 'exchange', refId: req.id },
+            mgr,
+          );
         }
       }
     });
@@ -245,7 +260,8 @@ export class ReturnService {
   /** Per-line remaining returnable quantity for an order. */
   async returnable(userId: string, orderId: string) {
     const order = await this.orders.findOneForUser(userId, orderId);
-    const eligible = RETURNABLE_STATUSES.includes(order.status) && order.paymentStatus === PaymentStatus.PAID;
+    const eligible =
+      RETURNABLE_STATUSES.includes(order.status) && order.paymentStatus === PaymentStatus.PAID;
     const items: Array<Record<string, unknown>> = [];
     for (const item of order.items) {
       const returned = await this.alreadyReturned(item.id);

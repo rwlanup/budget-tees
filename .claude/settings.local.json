@@ -8,7 +8,19 @@
       "Bash(docker compose *)",
       "Bash(pnpm --filter backend migration:run)",
       "Bash(pnpm --filter backend build)",
-      "Bash(pnpm --filter backend seed)"
+      "Bash(pnpm --filter backend seed)",
+      "Bash(pnpm dlx *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm lint *)",
+      "Bash(xargs cat)",
+      "Bash(grep -nA18 \"getAllForAdmin\\\\|getOneForAdmin\" services/settings.service.ts)",
+      "Bash(echo \"EXIT $?\")",
+      "Read(//tmp/**)",
+      "Bash(ls modules/return)",
+      "Bash(ls \"app/\\(admin\\)/admin/returns\")",
+      "Bash(cat lib/api/query-string.ts)",
+      "Bash(cat config/admin-nav.ts)",
+      "Bash(pnpm exec *)"
     ]
   }
 }

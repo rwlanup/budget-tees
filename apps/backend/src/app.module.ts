@@ -10,7 +10,6 @@ import { MediaModule } from './modules/media/media.module';
 import { SecurityModule } from './common/security/password.service';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { UserContactsModule } from './modules/user-contacts/user-contacts.module';
 import { CategoryModule } from './modules/category/category.module';
 import { TagModule } from './modules/tag/tag.module';
 import { BrandModule } from './modules/brand/brand.module';
@@ -28,6 +27,9 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { ReturnModule } from './modules/return/return.module';
 import { EmailModule } from './modules/email/email.module';
 import { FeaturedProductModule } from './modules/featured-product/featured-product.module';
+import { StorefrontModule } from './modules/storefront/storefront.module';
+import { ReviewModule } from './modules/review/review.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { FeaturedProductModule } from './modules/featured-product/featured-produ
         autoLoadEntities: true,
         synchronize: false,
         migrations: [__dirname + '/migrations/*.{ts,js}'],
+        logging: true,
       }),
     }),
     // Feature modules (migration order).
@@ -55,7 +58,6 @@ import { FeaturedProductModule } from './modules/featured-product/featured-produ
     MediaModule,
     UserModule,
     AuthModule,
-    UserContactsModule,
     CategoryModule,
     TagModule,
     BrandModule,
@@ -73,6 +75,9 @@ import { FeaturedProductModule } from './modules/featured-product/featured-produ
     ReturnModule,
     EmailModule,
     FeaturedProductModule,
+    StorefrontModule,
+    ReviewModule,
+    ContactModule,
   ],
 })
 export class AppModule {}

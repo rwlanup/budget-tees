@@ -1,15 +1,12 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
-import { FulfillmentMethod, OrderStatus, PaymentStatus } from '../enums/order.enums';
+import { OrderStatus, PaymentStatus } from '../enums/order.enums';
+import { Payment } from '../../payment/entities/payment.entity';
+import { PaymentRecordStatus } from '../../payment/enums/payment.enums';
 import { OrderStatusService } from './order-status.service';
 import { InventoryService } from '../../sku/services/inventory.service';
 import { CouponRedemptionService } from '../../coupon/coupon-redemption.service';
@@ -44,8 +41,16 @@ export class OrderService {
   async findOneForUser(userId: string, idOrNumber: string): Promise<Order> {
     const order = await this.repo.findOne({
       where: isUuid(idOrNumber) ? { id: idOrNumber, userId } : { orderNumber: idOrNumber, userId },
+      relations: { payments: true },
     });
     if (!order) throw new NotFoundException('Order not found');
+    // Customer-facing: drop gateway internals before serializing.
+    for (const p of order.payments ?? []) {
+      p.gatewayResponse = null;
+      p.gatewayTxnId = null;
+      p.idempotencyKey = null;
+    }
+    order.payments = sortPaymentsDesc(order.payments);
     return order;
   }
 
@@ -65,8 +70,12 @@ export class OrderService {
   }
 
   async adminFindOne(id: string): Promise<Order> {
-    const order = await this.repo.findOne({ where: { id } });
+    const order = await this.repo.findOne({
+      where: { id },
+      relations: { payments: { refunds: true } },
+    });
     if (!order) throw new NotFoundException('Order not found');
+    order.payments = sortPaymentsDesc(order.payments);
     return order;
   }
 
@@ -104,37 +113,71 @@ export class OrderService {
     return saved;
   }
 
+  /**
+   * Recompute the order's denormalized `paymentStatus` + `paidAt` from its payment rows
+   * (the payments table is the single source of truth). Called after any payment mutation.
+   */
+  async recomputePaymentStatus(orderId: string, mgr?: EntityManager): Promise<void> {
+    const repo = mgr ? mgr.getRepository(Order) : this.repo;
+    const order = await repo.findOne({ where: { id: orderId }, relations: { payments: true } });
+    if (!order) return;
+    const { status, paidAt } = derivePaymentStatus(order.payments ?? []);
+    await repo.update(orderId, { paymentStatus: status, paidAt });
+  }
+
   // ---- hooks called by Payment / Returns ----
 
+  /**
+   * Payment captured. On the FIRST capture of a still-PENDING order, commit reserved
+   * stock and advance PENDING → CONFIRMED; otherwise leave the order status untouched.
+   * Payment status is always re-derived from the payments table.
+   */
   async onPaymentSuccess(orderId: string): Promise<void> {
     const order = await this.dataSource.transaction(async (mgr) => {
       const order = await this.lock(mgr, orderId);
-      if (order.paymentStatus === PaymentStatus.PAID) return null; // idempotent
-      for (const item of order.items) {
-        await this.inventory.commit(item.skuId, item.quantity, { refType: 'order', refId: orderId }, mgr);
+      let justConfirmed = false;
+      if (order.status === OrderStatus.PENDING) {
+        for (const item of order.items) {
+          await this.inventory.commit(
+            item.skuId,
+            item.quantity,
+            { refType: 'order', refId: orderId },
+            mgr,
+          );
+        }
+        order.status = OrderStatus.CONFIRMED;
+        await mgr.getRepository(Order).save(order);
+        await this.status.record(mgr, orderId, OrderStatus.CONFIRMED, 'Payment received');
+        justConfirmed = true;
       }
-      order.paymentStatus = PaymentStatus.PAID;
-      order.status = OrderStatus.CONFIRMED;
-      order.paidAt = new Date();
-      await mgr.getRepository(Order).save(order);
-      await this.status.record(mgr, orderId, OrderStatus.CONFIRMED, 'Payment received');
-      return order;
+      await this.recomputePaymentStatus(orderId, mgr);
+      return justConfirmed ? order : null;
     });
     if (order) this.emitConfirmation(order);
   }
 
+  /** Gateway verify failed: only a still-PENDING order is cancelled (release stock, reverse coupon). */
   async onPaymentFailure(orderId: string): Promise<void> {
     const order = await this.dataSource.transaction(async (mgr) => {
       const order = await this.lock(mgr, orderId);
-      if (order.status === OrderStatus.CANCELLED) return null;
+      if (order.status !== OrderStatus.PENDING) {
+        // Already confirmed/cancelled elsewhere — just refresh the payment projection.
+        await this.recomputePaymentStatus(orderId, mgr);
+        return null;
+      }
       for (const item of order.items) {
-        await this.inventory.release(item.skuId, item.quantity, { refType: 'order', refId: orderId }, mgr);
+        await this.inventory.release(
+          item.skuId,
+          item.quantity,
+          { refType: 'order', refId: orderId },
+          mgr,
+        );
       }
       if (order.couponId) await this.coupons.reverse(orderId, mgr);
-      order.paymentStatus = PaymentStatus.FAILED;
       order.status = OrderStatus.CANCELLED;
       await mgr.getRepository(Order).save(order);
       await this.status.record(mgr, orderId, OrderStatus.CANCELLED, 'Payment failed');
+      await this.recomputePaymentStatus(orderId, mgr);
       return order;
     });
     if (order) this.emitStatusUpdate(order);
@@ -146,25 +189,29 @@ export class OrderService {
       const order = await this.lock(mgr, orderId);
       if (order.status !== OrderStatus.PENDING) return null;
       for (const item of order.items) {
-        await this.inventory.commit(item.skuId, item.quantity, { refType: 'order', refId: orderId }, mgr);
+        await this.inventory.commit(
+          item.skuId,
+          item.quantity,
+          { refType: 'order', refId: orderId },
+          mgr,
+        );
       }
       order.status = OrderStatus.CONFIRMED;
       await mgr.getRepository(Order).save(order);
       await this.status.record(mgr, orderId, OrderStatus.CONFIRMED, 'COD order confirmed');
+      await this.recomputePaymentStatus(orderId, mgr);
       return order;
     });
     if (order) this.emitConfirmation(order);
   }
 
-  async markPaid(orderId: string): Promise<void> {
-    await this.repo.update(orderId, { paymentStatus: PaymentStatus.PAID, paidAt: new Date() });
-  }
-
+  /**
+   * Refund recorded on the payment ledger. Re-derive payment status from payments;
+   * a full refund also moves the order to REFUNDED.
+   */
   async markRefunded(orderId: string, full: boolean): Promise<void> {
-    await this.repo.update(orderId, {
-      paymentStatus: full ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED,
-      ...(full ? { status: OrderStatus.REFUNDED } : {}),
-    });
+    await this.recomputePaymentStatus(orderId);
+    if (full) await this.repo.update(orderId, { status: OrderStatus.REFUNDED });
   }
 
   private async doCancel(order: Order, actorId: string, note?: string): Promise<Order> {
@@ -176,9 +223,19 @@ export class OrderService {
       const committed = STOCK_COMMITTED.includes(locked.status);
       for (const item of locked.items) {
         if (committed) {
-          await this.inventory.returnStock(item.skuId, item.quantity, { refType: 'order', refId: order.id }, mgr);
+          await this.inventory.returnStock(
+            item.skuId,
+            item.quantity,
+            { refType: 'order', refId: order.id },
+            mgr,
+          );
         } else {
-          await this.inventory.release(item.skuId, item.quantity, { refType: 'order', refId: order.id }, mgr);
+          await this.inventory.release(
+            item.skuId,
+            item.quantity,
+            { refType: 'order', refId: order.id },
+            mgr,
+          );
         }
       }
       if (locked.couponId) await this.coupons.reverse(order.id, mgr);
@@ -229,4 +286,36 @@ export class OrderService {
 
 function isUuid(v: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+
+/** Newest-first, non-mutating. */
+function sortPaymentsDesc(payments: Payment[] = []): Payment[] {
+  return [...payments].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+/**
+ * Roll up an order's payment rows into the order-level PaymentStatus (the payments
+ * table is authoritative). Precedence: REFUNDED > PARTIALLY_REFUNDED > PAID > FAILED > UNPAID.
+ * `paidAt` is the most recent capture timestamp, if any.
+ */
+function derivePaymentStatus(payments: Payment[]): { status: PaymentStatus; paidAt: Date | null } {
+  const has = (s: PaymentRecordStatus) => payments.some((p) => p.status === s);
+  const captured = payments.filter(
+    (p) =>
+      p.status === PaymentRecordStatus.SUCCESS ||
+      p.status === PaymentRecordStatus.PARTIALLY_REFUNDED ||
+      p.status === PaymentRecordStatus.REFUNDED,
+  );
+  const paidAt = captured.reduce<Date | null>((acc, p) => {
+    if (!p.paidAt) return acc;
+    return !acc || p.paidAt > acc ? p.paidAt : acc;
+  }, null);
+
+  if (has(PaymentRecordStatus.REFUNDED)) return { status: PaymentStatus.REFUNDED, paidAt };
+  if (has(PaymentRecordStatus.PARTIALLY_REFUNDED)) {
+    return { status: PaymentStatus.PARTIALLY_REFUNDED, paidAt };
+  }
+  if (has(PaymentRecordStatus.SUCCESS)) return { status: PaymentStatus.PAID, paidAt };
+  if (has(PaymentRecordStatus.FAILED)) return { status: PaymentStatus.FAILED, paidAt: null };
+  return { status: PaymentStatus.UNPAID, paidAt: null };
 }

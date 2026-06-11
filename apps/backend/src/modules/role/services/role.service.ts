@@ -76,7 +76,10 @@ export class RoleService {
       await this.repo.remove(role);
     } catch (err) {
       // users.roleId is ON DELETE RESTRICT
-      if (err instanceof QueryFailedError && (err as unknown as { code?: string }).code === '23503') {
+      if (
+        err instanceof QueryFailedError &&
+        (err as unknown as { code?: string }).code === '23503'
+      ) {
         throw new ConflictException('Role is assigned to users and cannot be deleted');
       }
       throw err;

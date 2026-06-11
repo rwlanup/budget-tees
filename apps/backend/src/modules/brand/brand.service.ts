@@ -91,7 +91,10 @@ export class BrandService {
     try {
       await this.repo.remove(brand);
     } catch (err) {
-      if (err instanceof QueryFailedError && (err as unknown as { code?: string }).code === '23503') {
+      if (
+        err instanceof QueryFailedError &&
+        (err as unknown as { code?: string }).code === '23503'
+      ) {
         throw new ConflictException('Brand has products and cannot be deleted');
       }
       throw err;

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { WishlistProduct } from './entities/wishlist-product.entity';
 import { ProductService } from '../product/product.service';
 import { SkuService } from '../sku/services/sku.service';
@@ -23,72 +23,66 @@ export class WishlistService {
     for (const row of rows) {
       const product = await this.products.findOneByIdOrSlug(row.productId, true).catch(() => null);
       if (!product) continue; // unpublished/deleted — skip
-      let basePrice = 0;
-      let salePrice = 0;
-      let onSale = false;
-      if (product.defaultSkuId) {
-        const sku = await this.skus.findOne(product.defaultSkuId).catch(() => null);
-        if (sku) {
-          basePrice = sku.price;
-          const resolved = await this.sales.resolveForProduct(product.id, sku.price);
-          salePrice = resolved.salePrice;
-          onSale = resolved.onSale;
-        }
-      }
+      const sku = await this.skus.findOne(row.skuId).catch(() => null);
+      if (!sku) continue; // sku deleted — skip
+      const resolved = await this.sales.resolveForProduct(product.id, sku.price);
       items.push({
+        skuId: sku.id,
         productId: product.id,
-        name: product.name,
+        // sku.name is the human variant label ("<product> <value> …"); fall back to product.
+        name: sku.name ?? product.name,
+        productName: product.name,
         slug: product.slug,
-        basePrice,
-        salePrice,
-        onSale,
+        imageMediaId: sku.imageMediaId,
+        basePrice: sku.price,
+        salePrice: resolved.salePrice,
+        onSale: resolved.onSale,
+        inStock: sku.stock - sku.reserved > 0 || sku.allowBackorder,
         addedAt: row.addedAt,
       });
     }
     return items;
   }
 
-  async add(userId: string, productId: string): Promise<{ wishlisted: true }> {
-    await this.products.findOneByIdOrSlug(productId, true); // must be published
-    const existing = await this.repo.findOne({ where: { userId, productId } });
-    if (!existing) await this.repo.save(this.repo.create({ userId, productId }));
+  /** Validates the SKU is sellable (active + on a published product); returns its productId. */
+  private async assertSellable(skuId: string): Promise<string> {
+    const sku = await this.skus.findOne(skuId);
+    if (!sku.isActive) throw new BadRequestException('This variant is not available');
+    await this.products.findOneByIdOrSlug(sku.productId, true); // must be published
+    return sku.productId;
+  }
+
+  async add(userId: string, skuId: string): Promise<{ wishlisted: true }> {
+    const productId = await this.assertSellable(skuId);
+    const existing = await this.repo.findOne({ where: { userId, skuId } });
+    if (!existing) await this.repo.save(this.repo.create({ userId, productId, skuId }));
     return { wishlisted: true };
   }
 
-  async remove(userId: string, productId: string): Promise<{ wishlisted: false }> {
-    await this.repo.delete({ userId, productId });
+  async remove(userId: string, skuId: string): Promise<{ wishlisted: false }> {
+    await this.repo.delete({ userId, skuId });
     return { wishlisted: false };
   }
 
-  async toggle(userId: string, productId: string): Promise<{ wishlisted: boolean }> {
-    const existing = await this.repo.findOne({ where: { userId, productId } });
+  async toggle(userId: string, skuId: string): Promise<{ wishlisted: boolean }> {
+    const existing = await this.repo.findOne({ where: { userId, skuId } });
     if (existing) {
       await this.repo.remove(existing);
       return { wishlisted: false };
     }
-    await this.products.findOneByIdOrSlug(productId, true);
-    await this.repo.save(this.repo.create({ userId, productId }));
+    const productId = await this.assertSellable(skuId);
+    await this.repo.save(this.repo.create({ userId, productId, skuId }));
     return { wishlisted: true };
   }
 
-  async contains(userId: string, productId: string): Promise<{ wishlisted: boolean }> {
-    const existing = await this.repo.findOne({ where: { userId, productId } });
+  async contains(userId: string, skuId: string): Promise<{ wishlisted: boolean }> {
+    const existing = await this.repo.findOne({ where: { userId, skuId } });
     return { wishlisted: !!existing };
   }
 
-  async moveToCart(
-    userId: string,
-    productId: string,
-    skuId: string,
-    quantity: number,
-    removeFromWishlist = true,
-  ) {
-    const sku = await this.skus.findOne(skuId);
-    if (sku.productId !== productId) {
-      throw new BadRequestException('SKU does not belong to this product');
-    }
+  async moveToCart(userId: string, skuId: string, quantity: number, removeFromWishlist = true) {
     const result = await this.cart.addItem({ userId }, { skuId, quantity });
-    if (removeFromWishlist) await this.repo.delete({ userId, productId });
+    if (removeFromWishlist) await this.repo.delete({ userId, skuId });
     return result;
   }
 }

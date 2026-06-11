@@ -19,13 +19,31 @@ export class Coupon extends BaseEntity {
   @Column({ type: 'enum', enum: CouponType })
   type: CouponType;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   value: number | null;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   maxDiscountAmount: number | null;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   minOrderAmount: number | null;
 
   @Column({ type: 'enum', enum: CouponAppliesTo, default: CouponAppliesTo.ALL })

@@ -10,9 +10,7 @@ export class CreateCoupons1710000000018 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TYPE "coupon_applies_to_enum" AS ENUM ('ALL','PRODUCTS','CATEGORIES')`,
     );
-    await queryRunner.query(
-      `CREATE TYPE "redemption_status_enum" AS ENUM ('APPLIED','REVERSED')`,
-    );
+    await queryRunner.query(`CREATE TYPE "redemption_status_enum" AS ENUM ('APPLIED','REVERSED')`);
 
     await queryRunner.query(`
       CREATE TABLE "coupons" (
@@ -45,7 +43,9 @@ export class CreateCoupons1710000000018 implements MigrationInterface {
         PRIMARY KEY ("couponId", "productId")
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_coupon_products_product" ON "coupon_products" ("productId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_coupon_products_product" ON "coupon_products" ("productId")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "coupon_categories" (
@@ -54,7 +54,9 @@ export class CreateCoupons1710000000018 implements MigrationInterface {
         PRIMARY KEY ("couponId", "categoryId")
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_coupon_categories_category" ON "coupon_categories" ("categoryId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_coupon_categories_category" ON "coupon_categories" ("categoryId")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "coupon_redemptions" (
@@ -67,9 +69,15 @@ export class CreateCoupons1710000000018 implements MigrationInterface {
         "redeemedAt" timestamptz NOT NULL DEFAULT now()
       )
     `);
-    await queryRunner.query(`CREATE INDEX "idx_redemptions_coupon" ON "coupon_redemptions" ("couponId")`);
-    await queryRunner.query(`CREATE INDEX "idx_redemptions_user" ON "coupon_redemptions" ("userId")`);
-    await queryRunner.query(`CREATE INDEX "idx_redemptions_order" ON "coupon_redemptions" ("orderId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_redemptions_coupon" ON "coupon_redemptions" ("couponId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_redemptions_user" ON "coupon_redemptions" ("userId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_redemptions_order" ON "coupon_redemptions" ("orderId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

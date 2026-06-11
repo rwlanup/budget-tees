@@ -98,8 +98,8 @@ export class MediaService {
       media.width = processed.width;
       media.height = processed.height;
       media.status = MediaStatus.READY;
-      media = await this.mediaRepo.save(media);
       media.variants = variants;
+      media = await this.mediaRepo.save(media);
       return media;
     } catch (err) {
       media.status = MediaStatus.FAILED;
@@ -129,7 +129,10 @@ export class MediaService {
     try {
       await this.mediaRepo.remove(media); // cascades media_variants
     } catch (err) {
-      if (err instanceof QueryFailedError && (err as unknown as { code?: string }).code === '23503') {
+      if (
+        err instanceof QueryFailedError &&
+        (err as unknown as { code?: string }).code === '23503'
+      ) {
         throw new ConflictException('Media is referenced and cannot be deleted');
       }
       throw err;

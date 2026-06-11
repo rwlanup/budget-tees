@@ -16,7 +16,10 @@ export function multiplyMoney(unit: number, qty: number): number {
 }
 
 /** Extract tax embedded in a tax-inclusive amount. Returns { net, tax }. */
-export function extractInclusiveTax(inclusiveAmount: number, ratePercent: number): {
+export function extractInclusiveTax(
+  inclusiveAmount: number,
+  ratePercent: number,
+): {
   net: number;
   tax: number;
 } {

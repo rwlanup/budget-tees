@@ -49,7 +49,9 @@ export class ShippingCalculatorService {
     });
     const normalizedRegion = region?.trim().toLowerCase();
     const regionZone = normalizedRegion
-      ? zones.find((z) => z.regions?.some((r) => r.region.trim().toLowerCase() === normalizedRegion))
+      ? zones.find((z) =>
+          z.regions?.some((r) => r.region.trim().toLowerCase() === normalizedRegion),
+        )
       : undefined;
     const zone = regionZone ?? zones.find((z) => z.isCountryWide);
     if (!zone) {

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EmailTemplate } from '../enums/email.enums';
 
 export interface RenderedEmail {
@@ -7,41 +8,333 @@ export interface RenderedEmail {
   text: string;
 }
 
+interface Block {
+  /** Hidden inbox-preview line. */
+  preheader: string;
+  heading: string;
+  /** Body paragraphs (HTML-safe plain strings). */
+  intro: string[];
+  cta?: { label: string; href: string };
+  /** label → value detail rows. */
+  details?: [string, string][];
+  /** Closing note (muted). */
+  note?: string;
+  /** Accent for the heading rule: neutral | success | danger. */
+  accent?: 'neutral' | 'success' | 'danger';
+}
+
+const C = {
+  bg: '#f4f4f5',
+  card: '#ffffff',
+  border: '#e4e4e7',
+  ink: '#18181b',
+  muted: '#71717a',
+  primary: '#18181b',
+  success: '#16a34a',
+  danger: '#dc2626',
+};
+
 /**
- * Minimal template registry. Subjects + simple HTML bodies per template.
- * Swap for MJML/Handlebars file templates later without changing callers.
+ * Production-grade transactional email templates: table-based, inline-styled, mobile-safe
+ * (≤600px), bulletproof CTA buttons, plain-text alternative. Same `render` interface as before.
  */
 @Injectable()
 export class TemplateRenderer {
+  constructor(private readonly config: ConfigService) {}
+
+  private get storeName(): string {
+    return this.config.get<string>('app.storeName') ?? 'Budget Tees';
+  }
+  private get webUrl(): string {
+    return (this.config.get<string>('payment.websiteUrl') ?? 'http://localhost:3000').replace(/\/$/, '');
+  }
+  private get currency(): string {
+    return this.config.get<string>('app.defaultCurrency') ?? 'NPR';
+  }
+  private get contact(): string {
+    return this.config.get<string>('smtp.fromAddress') ?? '';
+  }
+
   render(template: string, data: Record<string, unknown>): RenderedEmail {
-    const d = data ?? {};
-    switch (template as EmailTemplate) {
+    const block = this.block(template as EmailTemplate, data ?? {});
+    return {
+      subject: this.subject(template as EmailTemplate, data ?? {}),
+      html: this.html(block),
+      text: this.text(block),
+    };
+  }
+
+  // ---- per-template content ----
+
+  private subject(template: EmailTemplate, d: Record<string, unknown>): string {
+    const store = this.storeName;
+    switch (template) {
       case EmailTemplate.EMAIL_VERIFICATION:
-        return this.wrap('Verify your email', `Use this token to verify your email: <b>${d.token}</b>`);
+        return `Verify your email · ${store}`;
       case EmailTemplate.PASSWORD_RESET:
-        return this.wrap('Reset your password', `Use this token to reset your password: <b>${d.token}</b>`);
+        return `Reset your password · ${store}`;
       case EmailTemplate.PASSWORD_CHANGED:
-        return this.wrap('Password changed', 'Your password was changed. If this was not you, contact support.');
+        return `Your password was changed · ${store}`;
       case EmailTemplate.ORDER_CONFIRMATION:
-        return this.wrap(`Order ${d.orderNumber} confirmed`, `Thanks! Your order <b>${d.orderNumber}</b> is confirmed.`);
+        return `Order ${d.orderNumber} confirmed`;
       case EmailTemplate.ORDER_STATUS_UPDATE:
-        return this.wrap(`Order ${d.orderNumber} update`, `Your order <b>${d.orderNumber}</b> is now <b>${d.status}</b>.`);
+        return `Order ${d.orderNumber} · ${this.titleCase(String(d.status ?? 'updated'))}`;
       case EmailTemplate.PAYMENT_RECEIPT:
-        return this.wrap(`Payment received for ${d.orderNumber}`, `We received your payment for <b>${d.orderNumber}</b>.`);
+        return `Payment received · Order ${d.orderNumber}`;
       case EmailTemplate.REFUND_PROCESSED:
-        return this.wrap(`Refund processed`, `A refund of <b>${d.amount}</b> was processed for order <b>${d.orderNumber}</b>.`);
+        return `Refund processed · Order ${d.orderNumber}`;
       case EmailTemplate.RETURN_UPDATE:
-        return this.wrap(`Return ${d.returnNumber} update`, `Your return <b>${d.returnNumber}</b> is now <b>${d.status}</b>.`);
+        return `Return ${d.returnNumber} · ${this.titleCase(String(d.status ?? 'updated'))}`;
       default:
-        return this.wrap('Notification', String(d.message ?? ''));
+        return store;
     }
   }
 
-  private wrap(subject: string, bodyHtml: string): RenderedEmail {
-    const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:auto">
-      <h2>${subject}</h2><p>${bodyHtml}</p>
-      <hr/><small>Budget Tees</small></div>`;
-    const text = bodyHtml.replace(/<[^>]+>/g, '');
-    return { subject, html, text };
+  private block(template: EmailTemplate, d: Record<string, unknown>): Block {
+    const orderHref = (n: unknown) => `${this.webUrl}/account/orders/${encodeURIComponent(String(n))}`;
+
+    switch (template) {
+      case EmailTemplate.EMAIL_VERIFICATION:
+        return {
+          preheader: 'Confirm your email address to finish setting up your account.',
+          heading: 'Verify your email',
+          intro: [
+            'Welcome! Confirm this email address to activate your account and start shopping.',
+            'This link expires in 24 hours.',
+          ],
+          cta: {
+            label: 'Verify email',
+            href: `${this.webUrl}/verify-email?token=${encodeURIComponent(String(d.token ?? ''))}`,
+          },
+          note: 'If you didn’t create an account, you can safely ignore this email.',
+        };
+
+      case EmailTemplate.PASSWORD_RESET:
+        return {
+          preheader: 'Reset your password with the secure link inside.',
+          heading: 'Reset your password',
+          intro: [
+            'We received a request to reset your password. Tap the button below to choose a new one.',
+            'This link expires in 1 hour.',
+          ],
+          cta: {
+            label: 'Reset password',
+            href: `${this.webUrl}/reset-password?token=${encodeURIComponent(String(d.token ?? ''))}`,
+          },
+          note: 'Didn’t request this? Your password is unchanged — you can ignore this email.',
+        };
+
+      case EmailTemplate.PASSWORD_CHANGED:
+        return {
+          preheader: 'Your password was just changed.',
+          heading: 'Password changed',
+          intro: ['This confirms your account password was changed successfully.'],
+          accent: 'success',
+          note: this.contact
+            ? `If this wasn’t you, contact us immediately at ${this.contact}.`
+            : 'If this wasn’t you, contact support immediately.',
+        };
+
+      case EmailTemplate.ORDER_CONFIRMATION:
+        return {
+          preheader: `Order ${d.orderNumber} is confirmed.`,
+          heading: 'Order confirmed',
+          intro: ['Thanks for your order! We’re getting it ready and will email you as it progresses.'],
+          accent: 'success',
+          details: [
+            ['Order number', String(d.orderNumber ?? '')],
+            ['Order total', this.money(d.grandTotal)],
+          ],
+          cta: { label: 'View your order', href: orderHref(d.orderNumber) },
+        };
+
+      case EmailTemplate.ORDER_STATUS_UPDATE:
+        return {
+          preheader: `Order ${d.orderNumber} is now ${this.titleCase(String(d.status ?? ''))}.`,
+          heading: 'Order update',
+          intro: [`Your order status has changed to ${this.titleCase(String(d.status ?? ''))}.`],
+          details: [
+            ['Order number', String(d.orderNumber ?? '')],
+            ['Status', this.titleCase(String(d.status ?? ''))],
+          ],
+          cta: { label: 'Track your order', href: orderHref(d.orderNumber) },
+        };
+
+      case EmailTemplate.PAYMENT_RECEIPT:
+        return {
+          preheader: `We received your payment for order ${d.orderNumber}.`,
+          heading: 'Payment received',
+          intro: ['Thank you — your payment has been received and your order is confirmed.'],
+          accent: 'success',
+          details: [
+            ['Order number', String(d.orderNumber ?? '')],
+            ['Amount paid', this.money(d.amount)],
+          ],
+          cta: { label: 'View your order', href: orderHref(d.orderNumber) },
+        };
+
+      case EmailTemplate.REFUND_PROCESSED:
+        return {
+          preheader: `A refund was processed for order ${d.orderNumber}.`,
+          heading: 'Refund processed',
+          intro: [
+            'We’ve processed a refund for your order. It may take a few business days to appear on your statement.',
+          ],
+          details: [
+            ['Order number', String(d.orderNumber ?? '')],
+            ['Refund amount', this.money(d.amount)],
+          ],
+          cta: { label: 'View your order', href: orderHref(d.orderNumber) },
+        };
+
+      case EmailTemplate.RETURN_UPDATE:
+        return {
+          preheader: `Return ${d.returnNumber} is now ${this.titleCase(String(d.status ?? ''))}.`,
+          heading: 'Return update',
+          intro: [`Your return request has been updated to ${this.titleCase(String(d.status ?? ''))}.`],
+          details: [
+            ['Return number', String(d.returnNumber ?? '')],
+            ['Status', this.titleCase(String(d.status ?? ''))],
+          ],
+          cta: { label: 'View your returns', href: `${this.webUrl}/account/orders` },
+        };
+
+      default:
+        return {
+          preheader: '',
+          heading: 'Notification',
+          intro: [String(d.message ?? '')],
+        };
+    }
+  }
+
+  // ---- rendering ----
+
+  private html(b: Block): string {
+    const accent = b.accent === 'success' ? C.success : b.accent === 'danger' ? C.danger : C.primary;
+    const intro = b.intro
+      .filter(Boolean)
+      .map(
+        (p) =>
+          `<p style="margin:0 0 14px;color:${C.ink};font-size:15px;line-height:1.6">${this.esc(p)}</p>`,
+      )
+      .join('');
+
+    const cta = b.cta
+      ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0">
+           <tr><td bgcolor="${accent}" style="border-radius:8px">
+             <a href="${this.escAttr(b.cta.href)}" target="_blank"
+                style="display:inline-block;padding:12px 26px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;font-family:Arial,Helvetica,sans-serif">
+               ${this.esc(b.cta.label)}</a>
+           </td></tr>
+         </table>`
+      : '';
+
+    const ctaFallback = b.cta
+      ? `<p style="margin:0 0 14px;color:${C.muted};font-size:12px;line-height:1.5;word-break:break-all">
+           Or paste this link into your browser:<br/>
+           <a href="${this.escAttr(b.cta.href)}" style="color:${C.muted}">${this.esc(b.cta.href)}</a>
+         </p>`
+      : '';
+
+    const details =
+      b.details && b.details.length
+        ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+              style="margin:8px 0 18px;border:1px solid ${C.border};border-radius:8px;border-collapse:separate">
+             ${b.details
+               .map(
+                 ([label, value], i) =>
+                   `<tr>
+                      <td style="padding:11px 16px;color:${C.muted};font-size:13px;${i ? `border-top:1px solid ${C.border};` : ''}">${this.esc(label)}</td>
+                      <td align="right" style="padding:11px 16px;color:${C.ink};font-size:13px;font-weight:600;${i ? `border-top:1px solid ${C.border};` : ''}">${this.esc(value)}</td>
+                    </tr>`,
+               )
+               .join('')}
+           </table>`
+        : '';
+
+    const note = b.note
+      ? `<p style="margin:18px 0 0;color:${C.muted};font-size:13px;line-height:1.6">${this.esc(b.note)}</p>`
+      : '';
+
+    const year = new Date().getFullYear();
+    const footerContact = this.contact
+      ? `<a href="mailto:${this.escAttr(this.contact)}" style="color:${C.muted}">${this.esc(this.contact)}</a> · `
+      : '';
+
+    return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="light"/>
+<title>${this.esc(b.heading)}</title></head>
+<body style="margin:0;padding:0;background:${C.bg};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${this.esc(b.preheader)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:24px 12px">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+           style="max-width:600px;width:100%;background:${C.card};border:1px solid ${C.border};border-radius:12px;overflow:hidden;font-family:Arial,Helvetica,sans-serif">
+      <tr><td align="center" style="background:#ffffff;padding:22px 28px;border-bottom:1px solid ${C.border}">
+        <img src="${this.escAttr(this.webUrl)}/logo.jpeg" alt="${this.escAttr(this.storeName)}"
+             height="56" style="display:block;border:0;outline:none;height:56px;width:auto;margin:0 auto"/>
+      </td></tr>
+      <tr><td style="padding:28px">
+        <div style="width:40px;height:3px;background:${accent};border-radius:3px;margin:0 0 16px"></div>
+        <h1 style="margin:0 0 14px;color:${C.ink};font-size:20px;font-weight:700">${this.esc(b.heading)}</h1>
+        ${intro}
+        ${cta}
+        ${details}
+        ${ctaFallback}
+        ${note}
+      </td></tr>
+      <tr><td style="padding:18px 28px;background:#fafafa;border-top:1px solid ${C.border}">
+        <p style="margin:0;color:${C.muted};font-size:12px;line-height:1.6">
+          ${footerContact}© ${year} ${this.esc(this.storeName)}<br/>
+          This is an automated message — please don’t reply directly.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+  }
+
+  private text(b: Block): string {
+    const lines: string[] = [this.storeName.toUpperCase(), '', b.heading, ''];
+    lines.push(...b.intro.filter(Boolean));
+    if (b.details?.length) {
+      lines.push('');
+      for (const [label, value] of b.details) lines.push(`${label}: ${value}`);
+    }
+    if (b.cta) {
+      lines.push('', `${b.cta.label}: ${b.cta.href}`);
+    }
+    if (b.note) lines.push('', b.note);
+    lines.push('', `© ${new Date().getFullYear()} ${this.storeName}`);
+    return lines.join('\n');
+  }
+
+  // ---- helpers ----
+
+  private money(n: unknown): string {
+    return `${this.currency} ${Number(n ?? 0).toFixed(2)}`;
+  }
+
+  private titleCase(s: string): string {
+    return s
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  private esc(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  private escAttr(s: string): string {
+    return this.esc(s).replace(/'/g, '&#39;');
   }
 }

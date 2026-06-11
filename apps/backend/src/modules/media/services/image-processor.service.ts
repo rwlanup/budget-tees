@@ -65,7 +65,11 @@ export class ImageProcessorService {
     return {
       width: meta.width,
       height: meta.height,
-      original: { buffer: originalBuffer, contentType: `image/${meta.format}`, ext: meta.format ?? 'bin' },
+      original: {
+        buffer: originalBuffer,
+        contentType: `image/${meta.format}`,
+        ext: meta.format ?? 'bin',
+      },
       variants,
     };
   }

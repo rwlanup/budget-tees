@@ -6,7 +6,6 @@ import { PaymentEvent } from './entities/payment-event.entity';
 import { PaymentService } from './payment.service';
 import { RefundService } from './refund.service';
 import { EsewaGateway } from './gateways/esewa.gateway';
-import { KhaltiGateway } from './gateways/khalti.gateway';
 import {
   AdminPaymentController,
   PaymentController,
@@ -17,7 +16,7 @@ import { OrderModule } from '../order/order.module';
 @Module({
   imports: [TypeOrmModule.forFeature([Payment, PaymentRefund, PaymentEvent]), OrderModule],
   controllers: [PaymentController, PaymentWebhookController, AdminPaymentController],
-  providers: [PaymentService, RefundService, EsewaGateway, KhaltiGateway],
+  providers: [PaymentService, RefundService, EsewaGateway],
   exports: [PaymentService, RefundService],
 })
 export class PaymentModule {}

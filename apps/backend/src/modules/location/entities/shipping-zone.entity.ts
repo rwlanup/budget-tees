@@ -25,7 +25,13 @@ export class ShippingZone extends BaseEntity {
   @Column({ type: 'numeric', precision: 12, scale: 2, transformer: numeric })
   flatRate: number;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   freeShippingThreshold: number | null;
 
   @Column({ type: 'boolean', default: true })

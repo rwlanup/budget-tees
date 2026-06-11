@@ -38,10 +38,22 @@ export class ReturnRequest extends BaseEntity {
   @Column({ type: 'varchar', length: 500, nullable: true })
   adminNote: string | null;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   refundAmount: number | null;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: numericNullable })
+  @Column({
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    transformer: numericNullable,
+  })
   priceDifference: number | null;
 
   @Column({ type: 'uuid', nullable: true })

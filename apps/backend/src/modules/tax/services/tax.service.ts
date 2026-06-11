@@ -74,7 +74,9 @@ export class TaxService {
       throw new NotFoundException('Tax class not found');
     }
     const country = dto.countryCode.toUpperCase();
-    if (await this.rateRepo.findOne({ where: { taxClassId: dto.taxClassId, countryCode: country } })) {
+    if (
+      await this.rateRepo.findOne({ where: { taxClassId: dto.taxClassId, countryCode: country } })
+    ) {
       throw new ConflictException('Rate already exists for this class and country');
     }
     return this.rateRepo.save(

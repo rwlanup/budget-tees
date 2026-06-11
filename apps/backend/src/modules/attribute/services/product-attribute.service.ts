@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { ProductAttribute } from '../entities/product-attribute.entity';
@@ -113,7 +110,10 @@ export class ProductAttributeService {
 
   /** Variation axes for SKU generation: each variation attribute + its chosen value ids. */
   async getVariationAxes(productId: string): Promise<VariationAxis[]> {
-    const assignments = await this.paRepo.find({ where: { productId, isVariation: true }, order: { sortOrder: 'ASC' } });
+    const assignments = await this.paRepo.find({
+      where: { productId, isVariation: true },
+      order: { sortOrder: 'ASC' },
+    });
     const axes: VariationAxis[] = [];
     for (const pa of assignments) {
       const attr = await this.attrRepo.findOne({ where: { id: pa.attributeId } });

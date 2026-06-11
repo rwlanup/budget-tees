@@ -6,10 +6,6 @@ const numeric = {
   to: (v: number) => v,
   from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
 };
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
 
 @Entity('order_items')
 export class OrderItem extends BaseEntity {

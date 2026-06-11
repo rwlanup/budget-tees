@@ -1,4 +1,13 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Payment } from './payment.entity';
 
 const numeric = {
   to: (v: number) => v,
@@ -13,6 +22,10 @@ export class PaymentRefund {
   @Index()
   @Column({ type: 'uuid' })
   paymentId: string;
+
+  @ManyToOne(() => Payment, (p) => p.refunds, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'paymentId' })
+  payment: Payment;
 
   @Column({ type: 'numeric', precision: 12, scale: 2, transformer: numeric })
   amount: number;

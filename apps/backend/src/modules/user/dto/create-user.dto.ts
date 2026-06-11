@@ -1,12 +1,4 @@
-import {
-  IsEmail,
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Length,
-  Matches,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 import { UserStatus } from '../enums/user-status.enum';
 
 export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;

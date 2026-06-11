@@ -1,11 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Coupon } from './entities/coupon.entity';
-import {
-  CouponCategory,
-  CouponProduct,
-  CouponRedemption,
-} from './entities/coupon-links.entity';
+import { CouponCategory, CouponProduct, CouponRedemption } from './entities/coupon-links.entity';
 import { CouponService } from './coupon.service';
 import { CouponRedemptionService } from './coupon-redemption.service';
 import { CouponContextService } from './coupon-context.service';

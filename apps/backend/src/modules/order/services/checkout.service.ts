@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Order, AddressSnapshot } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { FulfillmentMethod, OrderStatus, PaymentStatus } from '../enums/order.enums';
@@ -23,11 +19,17 @@ import { ShippingMethod } from '../../location/enums/location.enums';
 import { CategoryService } from '../../category/category.service';
 import { CouponRedemptionService, CouponLine } from '../../coupon/coupon-redemption.service';
 import { addMoney, multiplyMoney, round2 } from '../../../common/utils/money';
+import { Product } from '../../product/entities/product.entity';
+import { Sku } from '../../sku/entities/sku.entity';
+import { ProductMediaService } from 'src/modules/product/product-media.service';
+import { MediaService } from 'src/modules/media/services/media.service';
+import { AttributeValue } from 'src/modules/attribute/entities/attribute-value.entity';
 
 @Injectable()
 export class CheckoutService {
   constructor(
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    @InjectRepository(AttributeValue) private readonly valueRepo: Repository<AttributeValue>,
     private readonly status: OrderStatusService,
     private readonly cart: CartService,
     private readonly pricing: CartPricingService,
@@ -41,6 +43,8 @@ export class CheckoutService {
     private readonly categories: CategoryService,
     private readonly coupons: CouponRedemptionService,
     private readonly dataSource: DataSource,
+    private readonly media: MediaService,
+    private readonly productMedia: ProductMediaService,
   ) {}
 
   async checkout(userId: string, dto: CheckoutDto, idempotencyKey?: string): Promise<Order> {
@@ -63,17 +67,28 @@ export class CheckoutService {
 
     // Resolve per-line snapshot data (price, sale source, product, tax class).
     const lineData: Array<{
-      product: import('../../product/entities/product.entity').Product;
-      sku: import('../../sku/entities/sku.entity').Sku;
+      product: Product;
+      sku: Sku;
       quantity: number;
       unitBasePrice: number;
       unitPrice: number;
       sourceSaleId: string | null;
       lineTotal: number;
+      imageUrl: string | null;
+      variant: Record<string, string> | null;
     }> = [];
     for (const line of priced.items) {
       const product = await this.products.findOneByIdOrSlug(line.productId, false);
       const sku = await this.skus.findOne(line.skuId);
+      const media = sku.imageMediaId ? await this.media.findOne(sku.imageMediaId) : await this.productMedia.getPrimaryMedia(product.id);
+      const skuAttributeValueIds = await this.skus.comboOf(sku.id);
+      const skuAttributes = skuAttributeValueIds.length ? await this.valueRepo.find({
+        where: { id: In(skuAttributeValueIds) },
+        relations: ['attribute'],
+      }) : [];
+      const variant: Record<string, string> | null = skuAttributes.length
+        ? Object.fromEntries(skuAttributes.map((sav) => [sav.attribute.name, sav.value]))
+        : null;
       const resolved = await this.sales.resolveForProduct(product.id, sku.price);
       const lineTotal = multiplyMoney(resolved.salePrice, line.quantity);
       lineData.push({
@@ -84,8 +99,11 @@ export class CheckoutService {
         unitPrice: resolved.salePrice,
         sourceSaleId: resolved.sourceSaleId,
         lineTotal,
+        imageUrl: media?.url ?? null,
+        variant: variant,
       });
     }
+
     const subtotal = addMoney(...lineData.map((l) => l.lineTotal));
 
     // Shipping.
@@ -102,7 +120,12 @@ export class CheckoutService {
       const store = await this.pickups.getActive();
       if (!store) throw new ConflictException('No active pickup location');
       pickupLocationId = store.id;
-      pickupSnapshot = { name: store.name, line1: store.line1, city: store.city, phone: store.phone };
+      pickupSnapshot = {
+        name: store.name,
+        line1: store.line1,
+        city: store.city,
+        phone: store.phone,
+      };
     }
     const shippingQuote = await this.shipping.calculate(
       dto.fulfillmentMethod === FulfillmentMethod.PICKUP
@@ -143,8 +166,8 @@ export class CheckoutService {
     const taxCountry = country ?? 'NP';
     let taxTotal = 0;
     const itemsData: Array<{
-      product: import('../../product/entities/product.entity').Product;
-      sku: import('../../sku/entities/sku.entity').Sku;
+      product: Product;
+      sku: Sku;
       quantity: number;
       unitBasePrice: number;
       unitPrice: number;
@@ -154,6 +177,8 @@ export class CheckoutService {
       taxAmount: number;
       taxRateLabel: string | null;
       finalLineTotal: number;
+      imageUrl: string | null;
+      variant: Record<string, string> | null;
     }> = [];
     for (const l of lineData) {
       const share = subtotal > 0 ? l.lineTotal / subtotal : 0;
@@ -222,10 +247,10 @@ export class CheckoutService {
           orderId: order.id,
           skuId: l.sku.id,
           productId: l.product.id,
-          productName: l.product.name,
+          productName: l.sku.name || l.product.name,
           skuCode: l.sku.sku,
-          variant: null,
-          imageUrl: null,
+          variant: l.variant,
+          imageUrl: l.imageUrl,
           unitBasePrice: l.unitBasePrice,
           unitPrice: l.unitPrice,
           sourceSaleId: l.sourceSaleId,

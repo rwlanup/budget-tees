@@ -1,14 +1,11 @@
 import { IsBoolean, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
-export class WishlistProductDto {
+export class WishlistItemDto {
   @IsUUID()
-  productId: string;
+  skuId: string;
 }
 
 export class MoveToCartDto {
-  @IsUUID()
-  skuId: string;
-
   @IsInt()
   @Min(1)
   @Max(99)

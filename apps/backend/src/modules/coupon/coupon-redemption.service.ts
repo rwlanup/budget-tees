@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Coupon } from './entities/coupon.entity';
 import { CouponCategory, CouponProduct, CouponRedemption } from './entities/coupon-links.entity';
 import { CouponAppliesTo, CouponType, RedemptionStatus } from './enums/coupon.enums';
@@ -91,7 +87,8 @@ export class CouponRedemptionService {
       lock: { mode: 'pessimistic_write' },
     });
     if (!coupon) this.fail('INVALID_COUPON');
-    if (coupon!.usageLimit != null && coupon!.usedCount >= coupon!.usageLimit) this.fail('USAGE_LIMIT');
+    if (coupon!.usageLimit != null && coupon!.usedCount >= coupon!.usageLimit)
+      this.fail('USAGE_LIMIT');
     coupon!.usedCount += 1;
     await mgr.getRepository(Coupon).save(coupon!);
     await mgr.getRepository(CouponRedemption).save(
@@ -140,7 +137,10 @@ export class CouponRedemptionService {
       return { discountAmount: round2(Math.min(discount, eligibleSubtotal)), freeShipping: false };
     }
     // FIXED
-    return { discountAmount: round2(Math.min(coupon.value ?? 0, eligibleSubtotal)), freeShipping: false };
+    return {
+      discountAmount: round2(Math.min(coupon.value ?? 0, eligibleSubtotal)),
+      freeShipping: false,
+    };
   }
 
   private async eligibleSubtotal(coupon: Coupon, ctx: CouponContext): Promise<number> {
@@ -154,7 +154,9 @@ export class CouponRedemptionService {
     const links = await this.ccRepo.find({ where: { couponId: coupon.id } });
     const catIds = new Set(links.map((l) => l.categoryId));
     return addMoney(
-      ...ctx.lines.filter((l) => l.categoryLineage.some((c) => catIds.has(c))).map((l) => l.lineTotal),
+      ...ctx.lines
+        .filter((l) => l.categoryLineage.some((c) => catIds.has(c)))
+        .map((l) => l.lineTotal),
     );
   }
 
