@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
-import { Sku } from '../entities/sku.entity';
+import { Sku, SkuSnapshot } from '../entities/sku.entity';
 import { SkuAttributeValue } from '../entities/sku-attribute-value.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { InventoryService } from './inventory.service';
@@ -41,6 +41,25 @@ export class SkuService {
   async comboOf(skuId: string): Promise<string[]> {
     const links = await this.savRepo.find({ where: { skuId } });
     return links.map((l) => l.attributeValueId).sort();
+  }
+
+  /** Immutable display snapshot of a SKU (name, variant, price, image) — see {@link SkuSnapshot}. */
+  async snapshot(skuId: string): Promise<SkuSnapshot> {
+    const sku = await this.findOne(skuId);
+    const product = await this.products.findOneByIdOrSlug(sku.productId, false);
+    const values = await this.attributes.valuesByIdsWithAttribute(await this.comboOf(skuId));
+    const variant = values.length
+      ? Object.fromEntries(values.map((v) => [v.attribute?.name ?? 'Variant', v.value]))
+      : null;
+    return {
+      skuId: sku.id,
+      skuCode: sku.sku,
+      productId: sku.productId,
+      productName: sku.name || product.name,
+      variant,
+      unitPrice: sku.price,
+      imageMediaId: sku.imageMediaId,
+    };
   }
 
   async create(productId: string, dto: CreateSkuDto): Promise<Sku> {
@@ -167,6 +186,16 @@ export class SkuService {
       .andWhere('(s.stock - s.reserved) <= s.lowStockThreshold')
       .orderBy('s.stock', 'ASC')
       .getMany();
+  }
+
+  /** Count of active low-stock SKUs (for the admin sidebar badge). */
+  async lowStockCount(): Promise<{ count: number }> {
+    const count = await this.repo
+      .createQueryBuilder('s')
+      .where('s.isActive = true')
+      .andWhere('(s.stock - s.reserved) <= s.lowStockThreshold')
+      .getCount();
+    return { count };
   }
 
   // ---- internals ----

@@ -3,10 +3,20 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Download } from 'lucide-react';
+import {
+  Download,
+  ChevronRight,
+  Truck,
+  MapPin,
+  Mail,
+  CreditCard,
+  StickyNote,
+  Receipt,
+} from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Reveal } from '@/components/motion/reveal';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { ProductImage } from './product-image';
 import { OrderStatusBadge, PaymentStatusBadge } from './order-status-badge';
@@ -68,6 +78,7 @@ export function OrderDetailView({ order }: { order: Order }) {
   };
 
   const addr = order.shippingAddress;
+  const billing = order.billingAddress;
   const pickup = order.pickupLocation as { name?: string; line1?: string; city?: string } | null;
 
   const confirmCancel = () => {
@@ -86,26 +97,29 @@ export function OrderDetailView({ order }: { order: Order }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Link href="/account/orders" className="text-sm text-muted-foreground hover:underline">
+          <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Link href="/account/orders" className="transition-colors hover:text-foreground">
               Orders
             </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="font-mono font-medium">{order.orderNumber}</span>
-          </div>
+            <ChevronRight className="size-3.5" aria-hidden />
+            <span className="font-mono font-medium text-foreground">{order.orderNumber}</span>
+          </nav>
+          <h1 className="mt-1 font-heading text-2xl font-bold tracking-tight">
+            Order {order.orderNumber}
+          </h1>
           {order.placedAt && (
             <p className="mt-1 text-sm text-muted-foreground">
               Placed {formatDate(order.placedAt)}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <OrderStatusBadge status={order.status} />
           <PaymentStatusBadge status={order.paymentStatus} />
         </div>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 sm:p-6">
         <OrderTracking status={order.status} method={order.fulfillmentMethod} />
         {order.trackingNumber && (
           <p className="mt-4 text-sm text-muted-foreground">
@@ -115,22 +129,25 @@ export function OrderDetailView({ order }: { order: Order }) {
         )}
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <Card className="divide-y p-0">
+      <Reveal as="div" className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <Card className="gap-0 overflow-hidden p-0">
           <ul className="divide-y">
             {order.items.map((it) => (
-              <li key={it.id} className="flex items-center gap-3 p-4">
-                <div className="w-16 shrink-0">
+              <li
+                key={it.id}
+                className="flex items-center gap-4 p-4 transition-colors hover:bg-accent/40"
+              >
+                <div className="w-16 shrink-0 overflow-hidden rounded-lg border">
                   <ProductImage src={it.imageUrl} alt={it.productName} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{it.productName}</p>
                   {it.variant && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {Object.values(it.variant).join(' · ')}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground tabular-nums">
                     {formatCurrency(it.unitPrice, currency)} × {it.quantity}
                   </p>
                 </div>
@@ -155,16 +172,24 @@ export function OrderDetailView({ order }: { order: Order }) {
               )}
               <Row label="Shipping" value={formatCurrency(order.shippingCost, currency)} />
               <Row label="Tax (incl.)" value={formatCurrency(order.taxTotal, currency)} />
-              <div className="flex justify-between pt-1 font-semibold">
+              <Separator className="my-1" />
+              <div className="flex items-baseline justify-between font-semibold">
                 <dt>Grand total</dt>
-                <dd className="tabular-nums">{formatCurrency(order.grandTotal, currency)}</dd>
+                <dd className="font-heading text-lg tabular-nums">
+                  {formatCurrency(order.grandTotal, currency)}
+                </dd>
               </div>
             </dl>
           </Card>
 
           <Card className="space-y-3 p-5 text-sm">
             <div>
-              <h3 className="font-medium">
+              <h3 className="flex items-center gap-2 font-medium">
+                {order.fulfillmentMethod === 'PICKUP' ? (
+                  <MapPin className="size-4 text-muted-foreground" aria-hidden />
+                ) : (
+                  <Truck className="size-4 text-muted-foreground" aria-hidden />
+                )}
                 {order.fulfillmentMethod === 'PICKUP' ? 'Pickup' : 'Delivery'}
               </h3>
               {order.fulfillmentMethod === 'PICKUP' ? (
@@ -185,14 +210,43 @@ export function OrderDetailView({ order }: { order: Order }) {
             </div>
             <Separator />
             <div>
-              <h3 className="font-medium">Contact</h3>
+              <h3 className="flex items-center gap-2 font-medium">
+                <Receipt className="size-4 text-muted-foreground" aria-hidden />
+                Billing
+              </h3>
+              {billing ? (
+                <p className="text-muted-foreground">
+                  {billing.recipientName}
+                  {billing.phone ? `, ${billing.phone}` : ''}
+                  <br />
+                  {billing.line1}
+                  {billing.line2 ? `, ${billing.line2}` : ''}
+                  {billing.city ? `, ${billing.city}` : ''}
+                  {billing.region ? `, ${billing.region}` : ''}
+                  {billing.countryCode ? ` · ${billing.countryCode}` : ''}
+                </p>
+              ) : (
+                <p className="text-muted-foreground">
+                  {addr ? 'Same as delivery address' : '—'}
+                </p>
+              )}
+            </div>
+            <Separator />
+            <div>
+              <h3 className="flex items-center gap-2 font-medium">
+                <Mail className="size-4 text-muted-foreground" aria-hidden />
+                Contact
+              </h3>
               <p className="text-muted-foreground">
                 {order.contactEmail} · {order.contactPhone}
               </p>
             </div>
             <Separator />
             <div>
-              <h3 className="font-medium">Payment</h3>
+              <h3 className="flex items-center gap-2 font-medium">
+                <CreditCard className="size-4 text-muted-foreground" aria-hidden />
+                Payment
+              </h3>
               <p className="text-muted-foreground">{order.paymentMethod}</p>
               {order.payments && order.payments.length > 0 && (
                 <ul className="mt-2 space-y-1">
@@ -211,7 +265,10 @@ export function OrderDetailView({ order }: { order: Order }) {
               <>
                 <Separator />
                 <div>
-                  <h3 className="font-medium">Note</h3>
+                  <h3 className="flex items-center gap-2 font-medium">
+                    <StickyNote className="size-4 text-muted-foreground" aria-hidden />
+                    Note
+                  </h3>
                   <p className="text-muted-foreground">{order.customerNote}</p>
                 </div>
               </>
@@ -219,7 +276,12 @@ export function OrderDetailView({ order }: { order: Order }) {
           </Card>
 
           {unpaid && (
-            <Button className="w-full" onClick={payWithEsewa} disabled={initiate.isPending}>
+            <Button
+              variant="brand"
+              className="w-full"
+              onClick={payWithEsewa}
+              disabled={initiate.isPending}
+            >
               {initiate.isPending ? 'Starting payment…' : 'Pay with eSewa'}
             </Button>
           )}
@@ -247,7 +309,7 @@ export function OrderDetailView({ order }: { order: Order }) {
             </Button>
           )}
         </div>
-      </div>
+      </Reveal>
 
       <CustomerReturnsSection order={order} />
 

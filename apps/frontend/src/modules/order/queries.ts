@@ -8,7 +8,13 @@ export const orderKeys = {
   all: ['orders'] as const,
   list: (params: ListOrdersParams) => [...orderKeys.all, 'list', params] as const,
   detail: (id: string) => [...orderKeys.all, 'detail', id] as const,
+  pendingCount: ['orders', 'pending-count'] as const,
 };
+
+/** Count of PENDING orders — for the admin sidebar badge. */
+export function useOrdersPendingCount() {
+  return useQuery({ queryKey: orderKeys.pendingCount, queryFn: () => orderApi.pendingCount() });
+}
 
 export function useOrders(params: ListOrdersParams) {
   return useQuery({

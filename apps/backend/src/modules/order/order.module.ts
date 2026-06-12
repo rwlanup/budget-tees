@@ -18,11 +18,12 @@ import { LocationModule } from '../location/location.module';
 import { CategoryModule } from '../category/category.module';
 import { CouponModule } from '../coupon/coupon.module';
 import { AttributeValue } from '../attribute/entities/attribute-value.entity';
+import { ReturnRequest } from '../return/entities/return-request.entity';
 import { MediaModule } from '../media/media.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, AttributeValue]),
+    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, AttributeValue, ReturnRequest]),
     CartModule,
     ProductModule,
     SkuModule,

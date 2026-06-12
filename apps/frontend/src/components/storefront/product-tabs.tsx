@@ -17,14 +17,19 @@ export function ProductTabs({
 
   return (
     <Tabs defaultValue="description" className="w-full">
-      <TabsList>
-        <TabsTrigger value="description">Description</TabsTrigger>
-        <TabsTrigger value="details">Details</TabsTrigger>
-        <TabsTrigger value="shipping">Shipping &amp; returns</TabsTrigger>
-        <TabsTrigger value="reviews">Reviews</TabsTrigger>
-      </TabsList>
+      <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <TabsList className="w-max">
+          <TabsTrigger value="description">Description</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="shipping">Shipping &amp; returns</TabsTrigger>
+          <TabsTrigger value="reviews">Reviews</TabsTrigger>
+        </TabsList>
+      </div>
 
-      <TabsContent value="description" className="max-w-prose pt-4 text-sm text-muted-foreground whitespace-pre-wrap">
+      <TabsContent
+        value="description"
+        className="max-w-prose pt-4 text-sm text-muted-foreground whitespace-pre-wrap"
+      >
         {product.description || product.shortDescription || 'No description available.'}
       </TabsContent>
 

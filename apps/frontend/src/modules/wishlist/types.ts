@@ -17,3 +17,7 @@ export interface WishlistItem {
 export interface WishlistState {
   wishlisted: boolean;
 }
+
+export interface WishlistCount {
+  count: number;
+}

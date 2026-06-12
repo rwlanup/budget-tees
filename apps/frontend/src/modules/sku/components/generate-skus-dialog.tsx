@@ -49,7 +49,7 @@ export function GenerateSkusDialog({ open, onOpenChange, productId }: Props) {
       },
       {
         onSuccess: (res) => {
-          toast.success(`${res.created.length} created, ${res.skipped} skipped`);
+          toast.success(`${res.created?.length || 0} created, ${res.skipped} skipped`);
           onOpenChange(false);
         },
         onError: (err) => setError(err instanceof ApiError ? err.messages : ['Failed to generate']),

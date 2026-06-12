@@ -9,8 +9,15 @@ import type { WishlistState } from './types';
 export const wishlistKeys = {
   all: ['wishlist'] as const,
   list: ['wishlist', 'list'] as const,
+  count: ['wishlist', 'count'] as const,
   contains: (skuId: string) => ['wishlist', 'contains', skuId] as const,
 };
+
+/** Invalidate the list + badge count after any wishlist mutation. */
+function invalidateWishlist(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: wishlistKeys.list });
+  qc.invalidateQueries({ queryKey: wishlistKeys.count });
+}
 
 /** Whether the visitor is authenticated (wishlist requires login). */
 export function useIsAuthed(): boolean {
@@ -25,6 +32,22 @@ export function useWishlist(enabled = true) {
     enabled: enabled && authed,
     staleTime: 30_000,
   });
+}
+
+export function useWishlistCountQuery(enabled = true) {
+  const authed = useIsAuthed();
+  return useQuery({
+    queryKey: wishlistKeys.count,
+    queryFn: () => wishlistApi.count(),
+    enabled: enabled && authed,
+    staleTime: 30_000,
+  });
+}
+
+/** Saved-item count for the header badge (0 while loading / guest / empty). */
+export function useWishlistCount(): number {
+  const { data } = useWishlistCountQuery();
+  return data?.count ?? 0;
 }
 
 export function useWishlistContains(skuId: string, enabled = true) {
@@ -43,7 +66,7 @@ export function useAddWishlist() {
     mutationFn: (skuId: string) => wishlistApi.add(skuId),
     onSuccess: (_data, skuId) => {
       qc.setQueryData<WishlistState>(wishlistKeys.contains(skuId), { wishlisted: true });
-      qc.invalidateQueries({ queryKey: wishlistKeys.list });
+      invalidateWishlist(qc);
     },
   });
 }
@@ -54,7 +77,7 @@ export function useToggleWishlist() {
     mutationFn: (skuId: string) => wishlistApi.toggle(skuId),
     onSuccess: (data, skuId) => {
       qc.setQueryData<WishlistState>(wishlistKeys.contains(skuId), data);
-      qc.invalidateQueries({ queryKey: wishlistKeys.list });
+      invalidateWishlist(qc);
     },
   });
 }
@@ -65,7 +88,7 @@ export function useRemoveWishlist() {
     mutationFn: (skuId: string) => wishlistApi.remove(skuId),
     onSuccess: (_data, skuId) => {
       qc.setQueryData<WishlistState>(wishlistKeys.contains(skuId), { wishlisted: false });
-      qc.invalidateQueries({ queryKey: wishlistKeys.list });
+      invalidateWishlist(qc);
     },
   });
 }
@@ -77,7 +100,7 @@ export function useMoveToCart() {
       wishlistApi.moveToCart(skuId, body),
     onSuccess: (cart) => {
       qc.setQueryData(cartKeys.all, cart);
-      qc.invalidateQueries({ queryKey: wishlistKeys.list });
+      invalidateWishlist(qc);
     },
   });
 }

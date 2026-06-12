@@ -3,10 +3,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { Search, Sparkles, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { StorefrontContainer } from './storefront-container';
+
+const QUICK_LINKS = ['Tees', 'Fit', 'Oversized', 'Shirt'];
 
 /** Homepage hero with inline search (no carousel, per design). */
 export function HeroSearch() {
@@ -20,19 +22,38 @@ export function HeroSearch() {
   };
 
   return (
-    <section className="border-b bg-secondary/40">
-      <StorefrontContainer className="py-16 text-center md:py-24">
-        <h1 className="mx-auto max-w-3xl font-heading text-4xl font-bold tracking-tight md:text-5xl">
-          Quality tees that fit your budget
+    <section className="bg-aurora relative overflow-hidden border-b">
+      {/* faint grid + glow flourish */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-40 mask-[radial-gradient(70%_60%_at_50%_0%,black,transparent)]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)',
+          backgroundSize: '56px 56px',
+        }}
+        aria-hidden
+      />
+      <StorefrontContainer className="py-20 text-center sm:py-28 lg:py-32">
+        <div className="reveal-scale mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-muted/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-strong dark:text-brand">
+          <Sparkles className="size-3.5" aria-hidden />
+          Simple, Affordable, Everyday
+        </div>
+
+        <h1 className="reveal mx-auto max-w-4xl font-heading text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+          Quality tees that <span className="text-gradient">fit your budget</span>
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
+        <p className="reveal mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
           Shop the latest drops. Pick your size and colour, add to cart in one tap.
         </p>
 
-        <form onSubmit={submit} role="search" className="mx-auto mt-8 flex max-w-xl gap-2">
+        <form
+          onSubmit={submit}
+          role="search"
+          className="reveal mx-auto mt-9 flex max-w-xl items-center gap-2 rounded-2xl border bg-card p-2 shadow-lg"
+        >
           <div className="relative flex-1">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
             <Input
@@ -41,18 +62,31 @@ export function HeroSearch() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search for tees, hoodies…"
               aria-label="Search products"
-              className="h-11 pl-9"
+              className="h-11 border-0 bg-transparent pl-11 text-base shadow-none focus-visible:ring-0"
             />
           </div>
-          <Button type="submit" size="lg">
+          <Button type="submit" size="lg" variant="brand" className="h-11 shrink-0 rounded-xl">
             Search
           </Button>
         </form>
 
-        <div className="mt-4">
-          <Button asChild variant="link" className="text-muted-foreground">
-            <Link href="/shop">Or browse all products</Link>
-          </Button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          {QUICK_LINKS.map((label) => (
+            <Link
+              key={label}
+              href={`/search?q=${encodeURIComponent(label)}`}
+              className="press rounded-full border bg-card/60 px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+            >
+              {label}
+            </Link>
+          ))}
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-1 px-2 py-1.5 text-sm font-semibold text-brand hover:underline"
+          >
+            Browse all
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
         </div>
       </StorefrontContainer>
     </section>

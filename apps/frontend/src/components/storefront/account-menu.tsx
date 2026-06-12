@@ -43,15 +43,22 @@ export function AccountMenu() {
           <User className="size-5" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-60 rounded-xl p-1.5">
         {signedIn ? (
           <>
             <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">
-                  {user.firstName} {user.lastName}
+              <div className="flex items-center gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-muted text-sm font-semibold text-brand-strong">
+                  {(user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '') || (
+                    <User className="size-4" aria-hidden />
+                  )}
                 </span>
-                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-semibold">
+                    {user.firstName} {user.lastName}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

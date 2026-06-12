@@ -12,12 +12,19 @@ export function FeaturedCard({ item }: { item: FeaturedItem }) {
   const href = `/product/${item.slug}`;
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-sm">
-      <Link href={href} aria-label={item.name}>
-        <ProductImage src={image ?? null} alt={item.name} />
+    <div className="press group flex flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-foreground/15 hover:shadow-lg">
+      <Link href={href} aria-label={item.name} className="overflow-hidden">
+        <ProductImage
+          src={image ?? null}
+          alt={item.name}
+          className="rounded-none [&_img]:transition-transform [&_img]:duration-500 group-hover:[&_img]:scale-105"
+        />
       </Link>
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <Link href={href} className="line-clamp-2 text-sm font-medium hover:underline">
+      <div className="flex flex-1 flex-col gap-2 p-3.5">
+        <Link
+          href={href}
+          className="line-clamp-2 text-sm font-semibold leading-snug transition-colors hover:text-brand"
+        >
           {item.name}
         </Link>
         <PriceTag

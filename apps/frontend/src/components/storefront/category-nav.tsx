@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -10,12 +11,14 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import { useCategoryTree } from '@/modules/category/queries';
 import type { Category } from '@/modules/category/types';
 
 /** Desktop top-level category navigation, sourced from the public category tree. */
 export function CategoryNav() {
   const { data, isLoading } = useCategoryTree();
+  const pathname = usePathname();
 
   if (isLoading) {
     return (
@@ -30,11 +33,21 @@ export function CategoryNav() {
   const roots = (data ?? []).filter((c) => c.isActive);
   if (!roots.length) return null;
 
+  const isActive = (slug: string) => pathname === `/category/${slug}`;
+  const linkBase =
+    'relative inline-flex items-center px-3 py-2 text-sm font-medium transition-colors';
+
   return (
     <NavigationMenu className="hidden lg:flex">
-      <NavigationMenuList>
+      <NavigationMenuList className="gap-0.5">
         <NavigationMenuItem>
-          <NavigationMenuLink asChild className="px-3 py-2 text-sm font-medium">
+          <NavigationMenuLink
+            asChild
+            className={cn(
+              linkBase,
+              pathname === '/shop' ? 'text-brand' : 'text-foreground/80 hover:text-foreground',
+            )}
+          >
             <Link href="/shop">Shop all</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
@@ -44,7 +57,13 @@ export function CategoryNav() {
           if (!children.length) {
             return (
               <NavigationMenuItem key={cat.id}>
-                <NavigationMenuLink asChild className="px-3 py-2 text-sm font-medium">
+                <NavigationMenuLink
+                  asChild
+                  className={cn(
+                    linkBase,
+                    isActive(cat.slug) ? 'text-brand' : 'text-foreground/80 hover:text-foreground',
+                  )}
+                >
                   <Link href={`/category/${cat.slug}`}>{cat.name}</Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -52,18 +71,26 @@ export function CategoryNav() {
           }
           return (
             <NavigationMenuItem key={cat.id}>
-              <NavigationMenuTrigger className="text-sm font-medium">
+              <NavigationMenuTrigger
+                className={cn(
+                  'bg-transparent text-sm font-medium',
+                  isActive(cat.slug) ? 'text-brand' : 'text-foreground/80',
+                )}
+              >
                 {cat.name}
               </NavigationMenuTrigger>
               <NavigationMenuContent>
-                <ul className="grid w-[420px] grid-cols-2 gap-1 p-3">
-                  <li className="col-span-2">
+                <ul className="grid w-110 grid-cols-2 gap-1 p-3">
+                  <li className="col-span-2 mb-1">
                     <NavigationMenuLink asChild>
                       <Link
                         href={`/category/${cat.slug}`}
-                        className="block rounded-md px-3 py-2 text-sm font-semibold hover:bg-accent"
+                        className="flex items-center justify-between rounded-lg bg-brand-muted/50 px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-brand-muted"
                       >
                         All {cat.name}
+                        <span aria-hidden className="text-brand">
+                          →
+                        </span>
                       </Link>
                     </NavigationMenuLink>
                   </li>
@@ -72,7 +99,7 @@ export function CategoryNav() {
                       <NavigationMenuLink asChild>
                         <Link
                           href={`/category/${child.slug}`}
-                          className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                          className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         >
                           {child.name}
                         </Link>

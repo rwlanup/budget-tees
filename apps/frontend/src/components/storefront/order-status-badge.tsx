@@ -1,5 +1,15 @@
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Truck,
+  PackageCheck,
+  CreditCard,
+  AlertCircle,
+  RotateCcw,
+  type LucideIcon,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import type { OrderStatus, PaymentStatus } from '@/modules/order/types';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -15,17 +25,35 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   RETURNED: 'Returned',
 };
 
+const STATUS_ICON: Record<OrderStatus, LucideIcon> = {
+  PENDING: Clock,
+  CONFIRMED: CheckCircle2,
+  PROCESSING: Clock,
+  SHIPPED: Truck,
+  DELIVERED: PackageCheck,
+  READY_FOR_PICKUP: PackageCheck,
+  PICKED_UP: PackageCheck,
+  CANCELLED: XCircle,
+  REFUNDED: RotateCcw,
+  RETURNED: RotateCcw,
+};
+
 const SUCCESS = new Set<OrderStatus>(['DELIVERED', 'PICKED_UP']);
 const DANGER = new Set<OrderStatus>(['CANCELLED', 'REFUNDED', 'RETURNED']);
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const tone = SUCCESS.has(status)
-    ? 'bg-success text-success-foreground'
+  const Icon = STATUS_ICON[status];
+  const variant = SUCCESS.has(status)
+    ? 'success'
     : DANGER.has(status)
-      ? 'bg-destructive text-destructive-foreground'
-      : '';
-  if (tone) return <Badge className={cn(tone, 'hover:opacity-90')}>{STATUS_LABEL[status]}</Badge>;
-  return <Badge variant="secondary">{STATUS_LABEL[status]}</Badge>;
+      ? 'destructive'
+      : 'secondary';
+  return (
+    <Badge variant={variant}>
+      <Icon className="size-3" aria-hidden />
+      {STATUS_LABEL[status]}
+    </Badge>
+  );
 }
 
 const PAYMENT_LABEL: Record<PaymentStatus, string> = {
@@ -39,15 +67,22 @@ const PAYMENT_LABEL: Record<PaymentStatus, string> = {
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   if (status === 'PAID')
     return (
-      <Badge className="bg-success text-success-foreground hover:opacity-90">
+      <Badge variant="success">
+        <CheckCircle2 className="size-3" aria-hidden />
         {PAYMENT_LABEL[status]}
       </Badge>
     );
   if (status === 'FAILED')
     return (
-      <Badge className="bg-destructive text-destructive-foreground hover:opacity-90">
+      <Badge variant="destructive">
+        <AlertCircle className="size-3" aria-hidden />
         {PAYMENT_LABEL[status]}
       </Badge>
     );
-  return <Badge variant="outline">{PAYMENT_LABEL[status]}</Badge>;
+  return (
+    <Badge variant="outline">
+      <CreditCard className="size-3" aria-hidden />
+      {PAYMENT_LABEL[status]}
+    </Badge>
+  );
 }

@@ -41,7 +41,6 @@ export const footerColumns: FooterColumn[] = [
     heading: 'Help',
     links: [
       { label: 'Contact us', href: '/contact' },
-      { label: 'Shipping & returns', href: '/help/shipping-returns' },
       { label: 'Track order', href: '/account/orders' },
     ],
   },

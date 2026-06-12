@@ -19,11 +19,7 @@ export const contactMessageSchema = z.object({
   firstName: z.string().min(1, 'Required').max(100),
   lastName: z.string().min(1, 'Required').max(100),
   email: z.email('Enter a valid email address').max(180),
-  phone: z
-    .string()
-    .regex(PHONE_REGEX, 'Enter a valid phone number')
-    .optional()
-    .or(z.literal('')),
+  phone: z.string().regex(PHONE_REGEX, 'Enter a valid phone number').optional().or(z.literal('')),
   topic: z.enum(CONTACT_TOPICS, { message: 'Select a topic' }),
   message: z.string().min(10, 'Please enter at least 10 characters').max(4000),
 });

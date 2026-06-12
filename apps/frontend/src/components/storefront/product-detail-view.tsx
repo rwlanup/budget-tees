@@ -58,7 +58,7 @@ export function ProductDetailView({
 
   const fullySelected = axes.every((ax) => selected[ax.attributeId]);
   const activeVariant: StorefrontVariantDetail | null = !axes.length
-    ? null
+    ? (variants[0] ?? null)
     : fullySelected
       ? (variants.find((v) =>
           axes.every((ax) => v.attributeValueIds.includes(selected[ax.attributeId])),
@@ -81,32 +81,48 @@ export function ProductDetailView({
 
   return (
     <div>
-      <nav className="mb-4 text-sm text-muted-foreground" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-foreground">
+      <nav
+        className="mb-5 flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+        aria-label="Breadcrumb"
+      >
+        <Link href="/" className="transition-colors hover:text-brand">
           Home
         </Link>
-        <span className="px-1">/</span>
-        <Link href={`/category/${product.category.slug}`} className="hover:text-foreground">
+        <span className="text-border">/</span>
+        <Link
+          href={`/category/${product.category.slug}`}
+          className="transition-colors hover:text-brand"
+        >
           {product.category.name}
         </Link>
-        <span className="px-1">/</span>
-        <span className="text-foreground">{product.name}</span>
+        <span className="text-border">/</span>
+        <span className="truncate font-medium text-foreground">{product.name}</span>
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
         <ProductGallery
           images={galleryImages}
           featuredUrl={featuredUrl}
           productName={product.name}
         />
 
-        <div className="space-y-5">
+        <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           <div>
-            {product.brand && <p className="text-sm text-muted-foreground">{product.brand.name}</p>}
-            <h1 className="font-heading text-2xl font-bold md:text-3xl">{product.name}</h1>
-            <ProductRatingSummary productId={product.id} />
+            {product.brand && (
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {product.brand.name}
+              </p>
+            )}
+            <h1 className="mt-1 font-heading text-3xl font-bold tracking-tight md:text-4xl">
+              {product.name}
+            </h1>
+            <div className="mt-2">
+              <ProductRatingSummary productId={product.id} />
+            </div>
             {product.shortDescription && (
-              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{product.shortDescription}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                {product.shortDescription}
+              </p>
             )}
           </div>
 
@@ -136,8 +152,8 @@ export function ProductDetailView({
           <div className="text-sm">
             {activeVariant ? (
               activeVariant.inStock ? (
-                <span className="inline-flex items-center gap-1.5 text-success">
-                  <span className="size-2 rounded-full bg-success" aria-hidden />
+                <span className="inline-flex items-center gap-2 rounded-full bg-success/10 px-3 py-1 font-medium text-success">
+                  <span className="size-2 animate-pulse rounded-full bg-success" aria-hidden />
                   In stock
                 </span>
               ) : (
@@ -169,12 +185,16 @@ export function ProductDetailView({
               <button
                 type="button"
                 disabled
-                className="inline-flex h-11 flex-1 cursor-not-allowed items-center justify-center rounded-md bg-secondary px-6 text-sm font-medium text-muted-foreground sm:flex-none"
+                className="inline-flex h-12 flex-1 cursor-not-allowed items-center justify-center rounded-xl bg-secondary px-7 text-sm font-semibold text-muted-foreground sm:flex-none"
               >
                 Select options
               </button>
             )}
-            <WishlistButton skuId={activeVariant?.skuId ?? detail.defaultSkuId} mode="detail" />
+            <WishlistButton
+              skuId={activeVariant?.skuId ?? detail.defaultSkuId}
+              mode="detail"
+              className="h-12 rounded-xl"
+            />
           </div>
         </div>
       </div>

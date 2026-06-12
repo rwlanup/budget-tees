@@ -17,7 +17,8 @@ Per-user saved **variants** (auth only). Single `wishlist_products` table (no pa
 - Cascade-deleted with user / product / **sku** (FK `fk_wishlist_sku` ON DELETE CASCADE).
 
 ## API
-`POST /wishlist/items {skuId}` · `POST /wishlist/toggle {skuId}` · `GET /wishlist/contains/:skuId` · `POST /wishlist/items/:skuId/move-to-cart {quantity, removeFromWishlist?}` · `DELETE /wishlist/items/:skuId`.
+
+`POST /wishlist/items {skuId}` · `POST /wishlist/toggle {skuId}` · `GET /wishlist/contains/:skuId` · `GET /wishlist/count` → `{count}` (raw row count for header badge) · `POST /wishlist/items/:skuId/move-to-cart {quantity, removeFromWishlist?}` · `DELETE /wishlist/items/:skuId`.
 
 ## Dependencies
 

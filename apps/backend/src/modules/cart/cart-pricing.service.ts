@@ -3,6 +3,8 @@ import { Cart } from './entities/cart.entity';
 import { SkuService } from '../sku/services/sku.service';
 import { SaleResolverService } from '../product-sale/services/sale-resolver.service';
 import { ProductService } from '../product/product.service';
+import { ProductMediaService } from '../product/product-media.service';
+import { MediaService } from '../media/services/media.service';
 import { addMoney, multiplyMoney } from '../../common/utils/money';
 
 export interface PricedCartLine {
@@ -18,6 +20,8 @@ export interface PricedCartLine {
   available: number;
   inStock: boolean;
   unavailable: boolean;
+  /** SKU image when set, else the product's primary image. */
+  imageUrl: string | null;
 }
 
 export interface PricedCart {
@@ -36,6 +40,8 @@ export class CartPricingService {
     private readonly skus: SkuService,
     private readonly sales: SaleResolverService,
     private readonly products: ProductService,
+    private readonly media: MediaService,
+    private readonly productMedia: ProductMediaService,
   ) {}
 
   async price(cart: Cart): Promise<PricedCart> {
@@ -52,6 +58,12 @@ export class CartPricingService {
         : { salePrice: 0, onSale: false };
       const unitPrice = resolved.salePrice;
       const available = sku ? sku.stock - sku.reserved : 0;
+      // Prefer the variant's own image; fall back to the product's primary.
+      const media = sku?.imageMediaId
+        ? await this.media.findOne(sku.imageMediaId).catch(() => null)
+        : product
+          ? await this.productMedia.getPrimaryMedia(product.id).catch(() => null)
+          : null;
       lines.push({
         itemId: item.id,
         skuId: item.skuId,
@@ -65,6 +77,7 @@ export class CartPricingService {
         available,
         inStock: available >= item.quantity,
         unavailable,
+        imageUrl: media?.url ?? null,
       });
     }
     const subtotal = addMoney(...lines.filter((l) => !l.unavailable).map((l) => l.lineTotal));

@@ -1,433 +1,289 @@
 # Budget Tees — Frontend Design System & Architecture
 
-> Single source of truth for the storefront + admin. Read this **before** building any
-> module. Every page, component, and API call follows the rules here. Backend contracts
-> live in `apps/backend/src/modules/<module>/CLAUDE.md` — align to those, never invent
-> mismatched shapes.
+> Single source of truth for the **storefront + admin**. Read this **before** building or
+> editing any UI. Every page, component, and API call follows the rules here. Backend
+> contracts live in `apps/backend/src/modules/<module>/CLAUDE.md` — align to those, never
+> invent mismatched shapes. **Redesigns never touch API endpoints, request/response shapes,
+> business logic, auth, state logic, or data flow** — only layout, structure, styling, motion.
 
-**Stack:** Next.js 15 (App Router) · React 19 · Tailwind CSS v4 · shadcn/ui · lucide-react ·
-react-hook-form · zod · TanStack Query v5 · native `fetch` · Zustand (sparingly).
+**Stack:** Next.js 15 (App Router) · React 19 · Tailwind CSS v4 · shadcn/ui · Radix · lucide-react ·
+`motion` (Framer Motion) · embla-carousel · vaul · cmdk · lenis · react-hook-form · zod ·
+TanStack Query v5 · native `fetch` · Zustand (sparingly).
 
 ---
 
-## 1. Design Principles
+## 1. Design Philosophy
 
-1. **Simplicity** — one primary action per screen; progressive disclosure over walls of options.
-2. **Consistency** — same tokens, same components, same spacing everywhere. No per-page hex, no one-off paddings.
-3. **Scalability** — feature-sliced folders, reusable primitives, typed contracts. Adding a module never edits another module.
-4. **Mobile-first** — design at 375px, scale up. Touch targets ≥ 44px.
-5. **Accessible by default** — semantic HTML, labels, focus rings, 4.5:1 contrast, `prefers-reduced-motion`.
-6. **Server-trusted** — prices, totals, tax, stock, and auth state are computed by the backend. The UI displays and requests; it never recomputes money.
+**"Premium streetwear, not a web store."** Budget Tees should feel like a modern fashion label
+— confident, fast, and tactile — across both the storefront _and_ the admin. We reject the
+usual split of a pretty shopfront bolted to a generic dashboard: admin and storefront share
+one design language, one token set, one motion vocabulary.
+
+The visual identity: a **clean neutral canvas** (near-white / deep zinc) carrying the product
+imagery, punctuated by a single **logo brand accent** for energy, focus, and
+moments of delight. CTAs are confident black/white (timeless apparel look — Nike, StockX,
+Apple); logo brand is the spark (Linear, Stripe, Arc). Big editorial type, generous whitespace,
+soft layered surfaces, and motion that feels intentional — never decorative noise.
+
+### Design Principles
+
+1. **Mobile-first** — design at 375px, scale up. Touch targets ≥ 44px. Bottom sheets over modals on mobile.
+2. **Gen Z / fashion-forward** — bold display type, big imagery, social-commerce energy, playful microinteractions.
+3. **Premium ecommerce** — whitespace, soft elevation, restraint. One hero moment per screen; no clutter.
+4. **One ecosystem** — admin and storefront share tokens, primitives, and motion. Admin is product, not spreadsheet.
+5. **Performance-first** — lazy-load below the fold, GPU-friendly transforms only, zero layout shift, optimize images.
+6. **Accessibility-first** — semantic HTML, labels, visible focus, 4.5:1 contrast, full keyboard nav, `prefers-reduced-motion`.
+7. **Server-trusted** — prices, totals, tax, stock, auth are computed by the backend. The UI displays and requests; it never recomputes money.
 
 ---
 
 ## 2. Color System
 
-shadcn/ui on Tailwind v4 uses CSS variables in **oklch**, split into light/dark blocks and
-exposed to Tailwind via `@theme inline`. Brand identity: **neutral zinc canvas, near-black
-primary action (timeless apparel look), emerald reserved for savings/sale (on-brand for
-"Budget"), amber for ratings, red for destructive.**
+Tailwind v4 CSS variables in **oklch**, split into light/dark blocks and exposed via
+`@theme inline` in `app/globals.css`. **Never put raw hex or `zinc-x` in a component — use
+semantic token classes only.**
 
-### Tokens (drop into `globals.css`)
+### Token roles
 
-```css
-@import 'tailwindcss';
-@import 'tw-animate-css';
-@custom-variant dark (&:is(.dark *));
-
-:root {
-  --radius: 0.625rem;
-
-  --background: oklch(1 0 0); /* white */
-  --foreground: oklch(0.21 0.006 285.9); /* zinc-900 ink */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.006 285.9);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.006 285.9);
-
-  --primary: oklch(0.21 0.006 285.9); /* near-black CTA */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.4); /* zinc-100 */
-  --secondary-foreground: oklch(0.21 0.006 285.9);
-  --muted: oklch(0.967 0.001 286.4);
-  --muted-foreground: oklch(0.552 0.016 285.9); /* zinc-500, ≥4.5:1 on white */
-  --accent: oklch(0.967 0.001 286.4);
-  --accent-foreground: oklch(0.21 0.006 285.9);
-
-  --success: oklch(0.627 0.17 149.2); /* emerald-600 — savings/in-stock */
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.769 0.16 70.08); /* amber — ratings/low stock */
-  --destructive: oklch(0.577 0.245 27.33); /* red-600 */
-  --destructive-foreground: oklch(0.985 0 0);
-
-  --border: oklch(0.92 0.004 286.3); /* zinc-200 */
-  --input: oklch(0.92 0.004 286.3);
-  --ring: oklch(0.21 0.006 285.9);
-}
-
-.dark {
-  --background: oklch(0.141 0.005 285.8); /* zinc-950 */
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.9);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.9);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0); /* invert: light CTA on dark */
-  --primary-foreground: oklch(0.21 0.006 285.9);
-  --secondary: oklch(0.274 0.006 286);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286);
-  --muted-foreground: oklch(0.705 0.015 286); /* lighter, retest contrast */
-  --accent: oklch(0.274 0.006 286);
-  --accent-foreground: oklch(0.985 0 0);
-  --success: oklch(0.696 0.17 149.2);
-  --success-foreground: oklch(0.141 0.005 285.8);
-  --warning: oklch(0.828 0.16 75);
-  --destructive: oklch(0.704 0.19 22.2);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.552 0.016 285.9);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-nunito), system-ui, sans-serif;
-  --font-heading: var(--font-rubik), var(--font-nunito), sans-serif;
-}
-```
+| Token                                    | Role                                                                                          |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `background` / `foreground`              | App canvas + ink. Slightly cool neutral.                                                      |
+| `card` / `popover` / `elevated`          | Layered surfaces. `elevated` = raised neutral panel.                                          |
+| `primary`                                | **Confident CTA** — near-black (light) / near-white (dark). The main action.                  |
+| `brand` / `brand-strong` / `brand-muted` | **From Logo** — links, focus ring, active states, highlights, gradients, energy. |
+| `secondary` / `muted` / `accent`         | Neutral fills + **shadcn hover background** (keep neutral — never vibrant).                   |
+| `success`                                | Savings / in-stock (emerald).                                                                 |
+| `warning`                                | Ratings / low stock (amber).                                                                  |
+| `destructive`                            | Errors / delete (red).                                                                        |
+| `border` / `input` / `ring`              | Hairlines, field borders, **vibrant brand logo color focus glow** (`ring` = brand).                     |
+| `sidebar-*`                              | Admin sidebar surface set.                                                                    |
 
 ### Usage rules
 
-- **Always use semantic token classes**: `bg-primary`, `text-muted-foreground`, `border-border`. Never raw `bg-zinc-900` or hex in a component.
-- Functional color is **never the only signal** — pair savings green / stock red with an icon or text (`color-not-only`).
-- Dark mode is a tonal remap (above), not an inversion. Test contrast in both themes independently.
-- Dark mode toggled via `.dark` class on `<html>` (next-themes, `class` strategy).
+- **Semantic classes only**: `bg-primary`, `text-brand`, `border-border`, `bg-card`, `text-muted-foreground`. No `bg-zinc-900`, no hex.
+- **`primary` = the action; `brand` = the accent.** Don't make every button logo color — reserve `brand` for emphasis (one accent moment per view). Use the `brand` button/badge variant intentionally.
+- `accent`/`muted` stay neutral — they are shadcn's hover/disabled fills. Never repaint them with brand color.
+- Functional color is **never the only signal** — pair savings/stock/status color with icon + text.
+- **Dark mode is a tonal remap, not an inversion.** Deep zinc surfaces, brighter logo color glow, soft shadows. Test contrast independently in both themes (`.dark` on `<html>`, next-themes `class` strategy).
+- Gradients: `text-gradient` (ink→logo color text), `bg-brand-gradient`, `bg-aurora` (soft logo color glow field for heroes/empty states).
 
 ---
 
 ## 3. Typography
 
-Loaded with `next/font/google` (self-hosted, `display: swap`, no layout shift) in
-`app/layout.tsx`, exposing `--font-rubik` / `--font-nunito`.
+`next/font/google`, self-hosted, `display: swap`. **Bricolage Grotesque** (display/headings,
+editorial character) + **Inter** (body/UI, neutral + legible). Exposed as `--font-bricolage` /
+`--font-inter`; `h1–h4` auto-apply the heading font with tight `-0.02em` tracking (set in base layer).
 
-```ts
-import { Rubik, Nunito_Sans } from 'next/font/google';
-const rubik = Rubik({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  variable: '--font-rubik',
-});
-const nunito = Nunito_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-nunito',
-});
-// <html className={`${rubik.variable} ${nunito.variable}`}>
-```
+| Token   | Class                                                                     | Use                              |
+| ------- | ------------------------------------------------------------------------- | -------------------------------- |
+| Hero    | `text-4xl sm:text-6xl lg:text-7xl font-heading font-bold tracking-tight`  | Homepage / editorial hero        |
+| Display | `text-3xl sm:text-4xl font-heading font-bold`                             | Big section headers              |
+| H1      | `text-2xl sm:text-3xl font-heading font-bold`                             | Page title                       |
+| H2      | `text-xl sm:text-2xl font-heading font-semibold`                          | Section                          |
+| H3      | `text-lg font-heading font-semibold`                                      | Card / block title               |
+| Body-lg | `text-lg leading-relaxed`                                                 | Lead paragraph                   |
+| Body    | `text-base leading-[1.6]`                                                 | Default (min 16px → no iOS zoom) |
+| Small   | `text-sm`                                                                 | Meta, helper                     |
+| Caption | `text-xs`                                                                 | Badges, timestamps (never body)  |
+| Eyebrow | `text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground` | Section kicker above a heading   |
 
-- **Headings:** Rubik (`font-heading`), weight 600–700.
-- **Body / UI:** Nunito Sans (`font-sans`), weight 400; labels 500.
-
-### Type scale (Tailwind classes)
-
-| Token   | Class                                         | Size / LH  | Use                              |
-| ------- | --------------------------------------------- | ---------- | -------------------------------- |
-| Display | `text-4xl md:text-5xl font-heading font-bold` | 36/48px    | Hero                             |
-| H1      | `text-3xl font-heading font-bold`             | 30px       | Page title                       |
-| H2      | `text-2xl font-heading font-semibold`         | 24px       | Section                          |
-| H3      | `text-xl font-heading font-semibold`          | 20px       | Card title                       |
-| Body-lg | `text-lg`                                     | 18px       | Lead                             |
-| Body    | `text-base`                                   | 16px / 1.6 | Default (min 16px → no iOS zoom) |
-| Small   | `text-sm`                                     | 14px       | Meta, helper                     |
-| Caption | `text-xs`                                     | 12px       | Badges, timestamps (never body)  |
-
-- Body line-height 1.5–1.6; measure 60–75 chars (`max-w-prose` for long text).
-- Prices, quantities, order totals → `tabular-nums` to prevent column shift.
-- Headings sequential h1→h6, no skips.
+- Headings are `font-heading`; body/UI is `font-sans` (default). Don't set heading font on body copy.
+- Prices, quantities, order totals, table numbers → `tabular-nums`.
+- Long text → `max-w-prose` (60–75 chars). Headings sequential h1→h6, no skips.
+- Big editorial type is encouraged on storefront marketing surfaces; admin stays tighter (H1 = `text-2xl`).
 
 ---
 
-## 4. Spacing System
+## 4. Spacing & Shape
 
-- **4 / 8px rhythm** — use Tailwind scale only (`p-2`=8, `p-4`=16, `p-6`=24, `gap-8`=32, `py-12`=48). No arbitrary `p-[13px]`.
-- **Vertical rhythm tiers:** intra-component 8/12/16 · section 24/32 · page-section 48/64.
-- **Page container:** `mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8` (storefront). Admin content `max-w-screen-2xl`.
-- **Reading width:** `max-w-prose` for descriptions/policy text.
-- **Grid:** product grid `grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4`. Forms single-column on mobile, `sm:grid-cols-2` for paired fields (e.g. city/postal).
-- **z-index scale:** base 0 · sticky header 30 · dropdown 40 · overlay/sheet 50 · toast 60. (shadcn portals already layer correctly; only override within these tiers.)
+- **4 / 8px rhythm** via Tailwind scale only (`p-2/4/6`, `gap-8`, `py-12/16/24`). No arbitrary `p-[13px]`.
+- **Vertical rhythm:** intra-component 8/12/16 · section 24/32 · **page-section 64/80/96** (storefront breathes — `py-16 sm:py-24`). Admin sections tighter (`py-6/8`).
+- **Page container:** storefront `mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8`; admin content `max-w-screen-2xl`.
+- **Radius scale** (base `--radius: 0.75rem`): `rounded-md` (inputs/sm), `rounded-lg` (buttons/controls), `rounded-xl` (cards), `rounded-2xl`/`rounded-3xl` (hero panels, feature blocks, sheets). Pick by elevation tier; be consistent.
+- **Elevation** = soft, layered, faintly logo color-tinted shadow tokens (`shadow-xs → shadow-2xl`, plus `shadow-brand` glow). Rest state: `border` or `shadow-xs`. Hover: lift one step (`hover:shadow-md`). **No harsh/black box-shadows, no heavy borders everywhere** — prefer one hairline border _or_ one soft shadow, rarely both.
+- **z-index:** base 0 · sticky header 30 · dropdown 40 · overlay/sheet 50 · toast 60.
 
 ---
 
 ## 5. Component System (shadcn/ui)
 
-**Use shadcn primitives wherever one exists. Do not hand-roll buttons, dialogs, selects.**
-Install on demand: `pnpm dlx shadcn@latest add button input ...`. Base color **zinc**.
-Generated into `src/components/ui/` (treated as vendored — edit only to extend variants).
+**Use shadcn primitives wherever one exists. Never hand-roll buttons, dialogs, selects, inputs.**
+Base color zinc; generated into `src/components/ui/` (vendored — edit only to extend variants/tokens).
+The primitives below are **already extended** with the new system — use the variants, don't fork.
 
-### Baseline install set
+### Component Standards
 
-`button input textarea label select checkbox radio-group switch form dialog sheet drawer dropdown-menu popover tooltip tabs card badge table skeleton sonner(toast) avatar separator accordion alert alert-dialog pagination breadcrumb command navigation-menu scroll-area aspect-ratio`.
+| Component                                | Rules / variants                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Button**                               | `rounded-lg`, `font-semibold`, springy `active:scale-[0.97]` press, hover elevation. Variants: `default` (near-black CTA), **`brand`** (logo color, emphasis CTA — one per view max), `secondary`, `outline`, `ghost`, `destructive`, `link`. Sizes `xs/sm/default(h-10)/lg(h-12)/icon*`. Async → `disabled` + `<Loader2 className="animate-spin" />`. Icon-only needs `aria-label`. **One primary CTA per view.** |
+| **Input / Textarea / Select**            | `h-10` (≥44px touch), `rounded-lg`, logo color focus ring + selection. Always inside `<Form>` field. Correct `type`/`inputMode`. Searchable/large sets → `cmdk` Command combobox.                                                                                                                                                                                                                                  |
+| **Card**                                 | `rounded-xl border bg-card`. Rest = border + `shadow-xs`; interactive cards add `press` + `hover:shadow-md` and `hover:-translate-y-0.5`. No random shadows. Use `bg-elevated` for nested raised panels.                                                                                                                                                                                                       |
+| **Badge**                                | `rounded-full`, icon+text (never color-only). Variants `default/brand/secondary/success/warning/destructive/outline/ghost`. Status maps to a fixed variant table (§ module docs).                                                                                                                                                                                                                              |
+| **Dialog / Drawer / Sheet**              | Desktop = `Dialog`; **mobile = `Drawer`/`Sheet` (bottom sheet, vaul)**. Always close affordance + Esc. Confirm before dismiss with unsaved changes.                                                                                                                                                                                                                                                            |
+| **Table**                                | Admin lists. Server-paginated. Hover row state, zebra optional, sortable headers carry `aria-sort`. **Collapses to a card list `< md`.** Sticky header on tall tables.                                                                                                                                                                                                                                         |
+| **Tabs**                                 | In-page section switching (product Description/Reviews/Shipping; account sections). Animated active indicator.                                                                                                                                                                                                                                                                                                 |
+| **Dropdown**                             | Row actions, account menu. Overflow → "more" menu, never cram.                                                                                                                                                                                                                                                                                                                                                 |
+| **Toast (Sonner)**                       | Mounted once in root. `richColors`, top-right. Auto-dismiss 3–5s, `aria-live`, never steals focus.                                                                                                                                                                                                                                                                                                             |
+| **Skeleton**                             | Loading > 300ms. Match final layout dimensions (no CLS). Use `.shimmer` sweep on key blocks.                                                                                                                                                                                                                                                                                                                   |
+| **Pagination / Breadcrumb / EmptyState** | List nav, orientation, empty results (icon + message + CTA, `bg-aurora` optional).                                                                                                                                                                                                                                                                                                                             |
 
-### Component contracts
+### Shared app components (`src/components/shared/`, built on primitives)
 
-| Component                           | Source                      | Rules / variants                                                                                                                                                                                                                                  |
-| ----------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Button**                          | shadcn                      | Variants `default`(primary CTA), `secondary`, `outline`, `ghost`, `destructive`, `link`. Sizes `sm/default/lg/icon`. **One `default` CTA per view.** Async → `disabled` + `<Loader2 className="animate-spin" />`. Icon buttons need `aria-label`. |
-| **Input / Textarea**                | shadcn                      | Always wrapped in `<Form>` field. Correct `type`/`inputMode` (email/tel/numeric). h ≥ 44px on mobile.                                                                                                                                             |
-| **Select**                          | shadcn                      | Native-feeling; for large/searchable sets use `Command` combobox.                                                                                                                                                                                 |
-| **Modal**                           | shadcn `Dialog`             | Desktop dialogs; **mobile → `Drawer`/`Sheet`** (bottom sheet). Always a close affordance + Esc. Confirm before dismiss with unsaved changes.                                                                                                      |
-| **Table**                           | shadcn `Table`              | Admin lists. Server-paginated. Sortable headers carry `aria-sort`. **Collapses to card list < `md`.**                                                                                                                                             |
-| **Card**                            | shadcn                      | `rounded-lg border bg-card`. Consistent elevation: rest `border` only, hover `shadow-sm`. No random shadows.                                                                                                                                      |
-| **Badge**                           | shadcn                      | Status semantics: order/return/payment states map to a fixed variant table (§ module docs). Always icon+text, never color-only.                                                                                                                   |
-| **Tabs**                            | shadcn                      | In-page section switching (e.g. product Description/Reviews/Shipping).                                                                                                                                                                            |
-| **Dropdown**                        | shadcn `DropdownMenu`       | Row actions, account menu. Overflow actions → "more" menu, never cram.                                                                                                                                                                            |
-| **Toast**                           | shadcn `Sonner`             | Mounted once in root layout. Success/error feedback. Auto-dismiss 3–5s, `aria-live`, never steals focus.                                                                                                                                          |
-| **Skeleton**                        | shadcn                      | Loading > 300ms. Match final layout dimensions to avoid CLS.                                                                                                                                                                                      |
-| **Pagination / Breadcrumb / Empty** | shadcn + local `EmptyState` | List nav, deep-hierarchy orientation, empty results.                                                                                                                                                                                              |
+`PriceTag` (tabular currency + strike compare-at), `RatingStars`, `QuantityStepper`,
+`EmptyState`, `DataState` (loading/error/empty/data), `ConfirmDialog`, `Pagination`,
+`ProductImage` (next/image + aspect-ratio + blur), `PageHeader`, `FormError`, `SubmitButton`.
 
-### Shared app components (built on primitives, `src/components/shared/`)
+### Motion components (`src/components/motion/`)
 
-`PriceTag` (currency + tabular, strike-through compare-at), `RatingStars`, `QuantityStepper`,
-`EmptyState` (icon+title+description+CTA), `DataState` (wraps query: loading/error/empty/data),
-`ConfirmDialog`, `Pagination` (wired to query params), `ProductImage` (next/image + aspect-ratio + blur),
-`PageHeader`, `FormError`, `SubmitButton` (pending-aware).
+`Reveal` / `Stagger` + `StaggerItem` (scroll-triggered fade-up, reduced-motion safe),
+`SmoothScroll` (lenis, storefront root, off on touch + reduced-motion). Prefer these over ad-hoc animation.
 
----
+### Storefront-specific standards
 
-## 6. Form Standards
-
-**react-hook-form + zod** via shadcn `<Form>` (`zodResolver`). Schemas live in
-`src/modules/<m>/schemas/` and **mirror backend DTO validation exactly** (read the module's CLAUDE.md).
-
-```tsx
-const form = useForm<z.infer<typeof loginSchema>>({
-  resolver: zodResolver(loginSchema),
-  defaultValues: { email: '', password: '' },
-  mode: 'onTouched', // validate on blur, not keystroke
-});
-```
-
-Rules:
-
-- **Visible `<FormLabel>` per field** (never placeholder-as-label). Required fields marked `*`.
-- **Validate on blur** (`onTouched`); errors render `<FormMessage>` directly **below the field**.
-- Helper text via `<FormDescription>` (persistent, not placeholder).
-- Password fields: show/hide toggle; `autoComplete` set (`current-password`/`new-password`).
-- Submit: `SubmitButton` disables + spinner while `isPending`. On success → toast + navigate/reset. On API error → map field errors (§9) and **focus first invalid field**; show form-level `<Alert variant="destructive">` for non-field errors.
-- Long/multi-step forms (checkout, product create): step indicator, back-nav allowed, never lose entered data on step change.
-- Destructive submits (delete) → `AlertDialog` confirm, red emphasis, spatially separated from primary.
-- Client zod is **UX only**; the server re-validates and is authoritative.
+- **Product card** (`VariantCard`): image in `AspectRatio`, scale-on-hover image, wishlist heart top-right, sale/sold-out badge top-left, quick add-to-cart. `press` + `hover:-translate-y-1 hover:shadow-lg`. Mobile = 2-up grid.
+- **Product gallery**: large immersive image, thumbnail rail / embla swipe on mobile, zoom affordance.
+- **Charts (admin)**: minimal, brand/neutral palette, gridlines `border`, tooltips on `popover`. Currency `tabular-nums`.
+- **Admin widgets**: stat cards (`bg-card`, eyebrow label + big `font-heading` number + trend badge), consistent with storefront cards.
 
 ---
 
-## 7. Icon Usage
+## 6. Motion Standards
 
-- **lucide-react only.** No emoji as icons, ever.
-- Sizes are tokens: inline-with-text `size-4` (16), default UI `size-5` (20), feature/empty-state `size-6`+ (24). Don't mix arbitrary sizes in one layer.
-- Default stroke (2px) everywhere; don't mix stroke widths.
-- Decorative icon → `aria-hidden`. Icon-only button → `aria-label`.
-- Canonical map: cart `ShoppingCart`, wishlist `Heart`, account `User`, search `Search`, success `CheckCircle2`, error `AlertCircle`, warning `TriangleAlert`, loading `Loader2 animate-spin`, remove `Trash2`, edit `Pencil`, more `MoreHorizontal`, sort `ArrowUpDown`. Reuse these — no synonyms.
+Motion is **smooth, fast, intentional** — it guides attention and rewards interaction; it never
+blocks, distracts, or jitters. **Always honor `prefers-reduced-motion`** (the `Reveal`/`Stagger`
+components and globals.css already short-circuit it).
+
+- **Durations:** micro (hover/press) 150–200ms · entrances 350–550ms · page/section reveals ≤ 600ms. Nothing slower than ~600ms.
+- **Easing tokens:** `--ease-out-quart` (UI), `--ease-out-expo` (entrances), `--ease-spring` (playful pop). Use these, not linear/default.
+- **Hover:** cards lift (`-translate-y-0.5/-1` + `shadow-md/lg`), images scale (`scale-105`), buttons elevate. GPU transforms/opacity only — never animate layout (width/height/top).
+- **Press:** `active:scale-[0.97]` on buttons + `.press` utility on tappable cards.
+- **Loading:** skeletons matching layout + `.shimmer` sweep (not bare spinners); inline button spinner for mutations.
+- **Page transitions:** subtle fade/slide on route change where it adds polish; section content uses `Reveal`/`Stagger` on scroll-in (once).
+- **Utilities:** `.reveal`, `.reveal-in`, `.reveal-scale`, `.marquee-track`, `.shimmer`, `.press`, `.glass`, `.bg-aurora`, `.text-gradient` (see globals.css `@theme` + `@layer utilities`).
 
 ---
 
-## 8. Layout Patterns
+## 7. Form Standards
 
-Two top-level shells via App Router **route groups**:
+**react-hook-form + zod** via shadcn `<Form>` (`zodResolver`). Schemas in `src/modules/<m>/schemas/`
+and **mirror backend DTO validation exactly**.
 
-- **`(shop)`** — storefront. Sticky `Header` (logo, category nav via `NavigationMenu`, search, cart sheet trigger w/ count badge, account menu) + `Footer`. Mobile: hamburger `Sheet` nav + bottom-relevant actions. Cart opens as a `Sheet`.
-- **`(admin)`** — `/admin/*`. Collapsible left `Sidebar` (≥`lg`, drawer on mobile) + top bar (breadcrumb, user menu). Adaptive: sidebar on desktop, drawer below.
-- **`(auth)`** — centered single-column card (`max-w-md`), logo, minimal chrome, no nav. Brand panel optional on `lg`.
+- Visible `<FormLabel>` per field (never placeholder-as-label). Required `*`. Validate on blur (`mode: 'onTouched'`); `<FormMessage>` below field.
+- Helper text via `<FormDescription>`. Password: show/hide toggle + correct `autoComplete`.
+- Submit: `SubmitButton` disables + spinner while `isPending`. Success → toast + navigate/reset. API error → map field errors (§10), focus first invalid field, form-level `<Alert variant="destructive">` for non-field errors.
+- Multi-step (checkout, product create): step indicator, back-nav allowed, never lose data on step change.
+- Destructive submits → `AlertDialog`, red emphasis, separated from primary. Client zod is UX only; server is authoritative.
+- Group related fields with section headings + whitespace; paired fields `sm:grid-cols-2`. Mobile = single column, comfy spacing.
+
+---
+
+## 8. Icon Usage
+
+- **lucide-react only.** No emoji as icons.
+- Sizes: inline-with-text `size-4`, default UI `size-5`, feature/empty `size-6`+. Don't mix arbitrary sizes in one layer. Default 2px stroke.
+- Decorative → `aria-hidden`; icon-only button → `aria-label`.
+- Canonical map: cart `ShoppingBag`, wishlist `Heart`, account `User`, search `Search`, success `CheckCircle2`, error `AlertCircle`, warning `TriangleAlert`, loading `Loader2 animate-spin`, remove `Trash2`, edit `Pencil`, more `MoreHorizontal`, sort `ArrowUpDown`, filter `SlidersHorizontal`. Reuse — no synonyms.
+
+---
+
+## 9. Layout Patterns
+
+Three App Router route-group shells:
+
+- **`(storefront)`** — `AnnouncementBar` + sticky **glass** `SiteHeader` (logo, category `NavigationMenu`, search trigger, wishlist, cart drawer w/ count, account menu, theme toggle) + `SiteFooter`. Mobile: hamburger `Sheet` + sticky `BottomNav`. Cart opens as a `Sheet`. `SmoothScroll` mounts here.
+- **`(admin)`** — `/admin/*`. Collapsible left `Sidebar` (≥`lg`, drawer on mobile) + glass top bar (breadcrumb, search, theme, user menu). Same tokens/motion as storefront — premium, product-focused, not a generic dashboard.
+- **`(auth)`** — centered single-column `AuthCard` (`max-w-md`), `bg-aurora` brand backdrop, minimal chrome.
 
 Pattern specifics:
 
-- **Product listing:** filter sidebar (`lg`) / filter `Sheet` (mobile) + responsive product grid + server pagination. Filters & sort live in **URL search params** (shareable, back-restores state).
-- **Product detail:** gallery (`AspectRatio` + thumbnails) | info column (title, `PriceTag`, variant selectors, `QuantityStepper`, add-to-cart, wishlist) → `Tabs` (details/shipping/returns) → related grid.
-- **Checkout:** multi-step (Address → Shipping/Pickup → Review → Pay) with step indicator; order summary sticky aside on desktop, collapsible on mobile.
-- Fixed header reserves body offset; safe-area-aware; lists never hidden behind sticky bars.
+- **Listing:** filter sidebar (`lg`) / filter `Sheet` (mobile) + responsive product grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) + server pagination. Filters & sort live in **URL search params**. Sticky toolbar.
+- **Product detail:** immersive gallery | **sticky** info column (title, `PriceTag`, variant selectors, `QuantityStepper`, add-to-cart, wishlist) → `Tabs` (details/reviews/shipping) → related grid.
+- **Checkout:** multi-step (Address → Shipping/Pickup → Review → Pay) with step indicator; sticky order summary aside on desktop, collapsible on mobile. Minimal, trustworthy.
+- **Account:** premium dashboard — left nav, stat/summary cards, clean lists for orders/addresses/wishlist.
+- Fixed header reserves body offset; safe-area-aware; lists never hidden behind sticky bars. **No horizontal scroll at any breakpoint.**
 
 ---
 
-## 9. API Integration Pattern
+## 10. API Integration Pattern
 
-Backend: NestJS, **global prefix `/api`**, CORS enabled, JWT access + rotating refresh.
+Backend: NestJS, **global prefix `/api`**, CORS, JWT access + rotating refresh. **Redesign must not change any of this.**
 
-### 9.1 Response & error envelope (authoritative — from backend `AllExceptionsFilter`)
+### 10.1 Envelope (from `AllExceptionsFilter`)
 
-- **Success:** controllers return the resource/DTO directly (no wrapper). Lists return
-  `{ items, total, page, limit, totalPages }` (the `PaginatedResult<T>` shape).
-- **Error (any non-2xx):**
-  ```json
-  {
-    "statusCode": 400,
-    "code": "BAD_REQUEST",
-    "message": "string | string[]",
-    "details": {},
-    "path": "/api/..."
-  }
-  ```
-  `message` may be a **string or string[]** (class-validator). `code` is a stable string
-  (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `UNPROCESSABLE_ENTITY`, `TOO_MANY_REQUESTS`, …).
+- **Success:** resource/DTO directly; lists are `{ items, total, page, limit, totalPages }` (`PaginatedResult<T>`).
+- **Error:** `{ statusCode, code, message, details, path }`. `message` is string | string[]; `code` is stable (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `UNPROCESSABLE_ENTITY`, `TOO_MANY_REQUESTS`…).
 
-### 9.2 fetch client (`src/lib/api/client.ts`)
+### 10.2 fetch client (`src/lib/api/client.ts`)
 
-A thin typed wrapper around `fetch`:
+Base URL `NEXT_PUBLIC_API_URL`; `Authorization: Bearer <access>` from auth store; throws `ApiError` on non-2xx (normalizing `message[]` → field map); **401 → single-flight refresh + retry once**, else clear session + redirect `/sign-in`; `Idempotency-Key` passthrough for checkout.
 
-- Base URL from `process.env.NEXT_PUBLIC_API_URL` (e.g. `http://localhost:4000/api`).
-- Attaches `Authorization: Bearer <access>` (token from auth store, in memory).
-- Parses JSON; on non-2xx **throws `ApiError`** (`{ statusCode, code, message, fieldErrors? }`), normalizing `message: string[]` → joined string + best-effort field map.
-- **401 → single-flight refresh**: call `/auth/refresh`, retry once; on refresh failure clear session + redirect to login. Never loop.
-- `Idempotency-Key` header passed through for order checkout.
+### 10.3 TanStack Query
 
-### 9.3 TanStack Query
+One `QueryClientProvider`. Defaults `staleTime` 30s, `retry` 1 (no retry 4xx), `refetchOnWindowFocus` false. **Query-key factory per module** (`queries.ts`), never inline keys. Reads `useQuery`; writes `useMutation` + targeted `invalidateQueries`; optimistic cart/wishlist with rollback `onError`. SSR prefetch + `dehydrate` for SEO (listing/detail).
 
-- One `QueryClientProvider` in root. Defaults: `staleTime` 30s, `retry` 1 (no retry on 4xx), `refetchOnWindowFocus` false.
-- **Query-key factory per module** (`src/modules/<m>/queries.ts`), never inline string keys:
-  ```ts
-  export const productKeys = {
-    all: ['products'] as const,
-    list: (params: ProductListParams) => [...productKeys.all, 'list', params] as const,
-    detail: (slug: string) => [...productKeys.all, 'detail', slug] as const,
-  };
-  ```
-- Reads → `useQuery`; writes → `useMutation` with **targeted `invalidateQueries`** (e.g. add-to-cart invalidates `cartKeys.all`). Use optimistic updates for cart quantity / wishlist toggle with rollback `onError`.
-- Server Components may prefetch + `dehydrate` for first paint (product listing/detail SEO); interactive trees use client hooks.
+### 10.4 DataState contract
 
-### 9.4 Loading / error / empty (the `DataState` contract)
-
-Every data view handles four states explicitly:
-
-- **Loading** → `Skeleton` matching layout (not a bare spinner) when > 300ms.
-- **Error** → inline `Alert` + **Retry** button (`refetch`); 401 handled globally.
-- **Empty** → `EmptyState` (icon + message + CTA), never a blank screen.
-- **Data** → content.
-
-Mutations: button pending state → toast success / error. 409/422 map to field or form errors with a recovery path (`error-clarity`, `error-recovery`).
+Every data view handles four states: **Loading** (skeleton matching layout >300ms), **Error** (inline `Alert` + Retry; 401 global), **Empty** (`EmptyState`, never blank), **Data**. Mutations: pending button → toast; 409/422 → field/form errors with recovery path.
 
 ---
 
-## 10. State Management Strategy
+## 11. State Management
 
-Pick the **lowest-power tool** that works:
-
-1. **URL search params** — listing filters, sort, page, search query, active tab. Shareable, SSR-able, back-restores.
-2. **TanStack Query** — _all_ server data (products, cart, orders, profile…). This is the cache; don't mirror it into Zustand.
-3. **Local `useState`/`useReducer`** — ephemeral UI: open/closed, hovered, form field focus.
-4. **React Context** — cross-cutting, low-churn: theme, current-user snapshot.
-5. **Zustand** — only genuinely-global client state with no server home: **auth tokens/session** (`useAuthStore`), **cart drawer open state**, optional guest-cart buffer. Keep stores tiny; never duplicate query data.
-
-Rule: if the server owns it, it lives in Query — not Zustand.
+Lowest-power tool that works: **1.** URL params (filters/sort/page/search/tab) · **2.** TanStack Query (all server data — the cache; don't mirror into Zustand) · **3.** `useState`/`useReducer` (ephemeral UI) · **4.** Context (theme, current-user snapshot) · **5.** Zustand only for genuinely-global client state with no server home (auth tokens/session, cart-drawer open, guest-cart buffer). **If the server owns it, it lives in Query.**
 
 ---
 
-## 11. Folder Structure
+## 12. Folder Structure
 
-Feature-sliced. A module owns its components/hooks/schemas/queries/types; `components/` and
-`lib/` hold only cross-module shared code.
+Feature-sliced. A module owns its components/hooks/schemas/queries/types; `components/` + `lib/` hold cross-module shared code.
 
 ```
 apps/frontend/src/
-├── app/                          # App Router (routing + layouts only, thin)
-│   ├── (shop)/                   # storefront shell
-│   │   ├── layout.tsx
-│   │   ├── page.tsx              # home
-│   │   ├── products/ ...         # listing + [slug] detail
-│   │   ├── cart/  checkout/  orders/  wishlist/  account/
-│   ├── (auth)/                   # login / register / forgot / reset
-│   ├── (admin)/admin/ ...        # dashboard, products, orders, media, settings
-│   ├── layout.tsx                # root: fonts, providers, <Toaster/>
-│   └── globals.css               # tokens (§2)
+├── app/
+│   ├── (storefront)/   layout · page(home) · shop · category/[slug] · product/[slug] · cart · checkout · search · wishlist · account/*
+│   ├── (auth)/         sign-in · sign-up · verify-email · forgot/reset-password
+│   ├── (admin)/admin/  dashboard, products, orders, payments, returns, settings, …
+│   ├── layout.tsx      root: fonts (Bricolage+Inter), Providers, <Toaster/>
+│   └── globals.css     design tokens (§2), motion tokens + utilities (§6)
 ├── components/
-│   ├── ui/                       # shadcn primitives (vendored)
-│   ├── shared/                   # PriceTag, DataState, EmptyState, Pagination…
-│   └── layout/                   # Header, Footer, Sidebar, MobileNav
-├── modules/                      # ← feature logic, one folder per backend module
-│   └── <module>/
-│       ├── components/           # module-specific UI
-│       ├── hooks/                # useLogin, useProductList…
-│       ├── queries.ts            # query-key factory + useQuery/useMutation
-│       ├── schemas.ts            # zod (mirrors backend DTO)
-│       ├── api.ts                # endpoint fns calling the fetch client
-│       └── types.ts              # response/DTO types
-├── lib/
-│   ├── api/                      # client.ts, ApiError, refresh logic
-│   ├── query/                    # queryClient, Providers
-│   ├── utils.ts                  # cn(), formatCurrency, formatDate
-│   └── auth/                     # auth store, guards/middleware helpers
-├── hooks/                        # truly generic (useMediaQuery, useDebounce)
-├── types/                        # global shared types (ApiError, Paginated<T>)
-└── config/                       # site config, nav config, env
+│   ├── ui/             shadcn primitives (vendored, extended)
+│   ├── shared/         PriceTag, DataState, EmptyState, Pagination, …
+│   ├── storefront/     SiteHeader, SiteFooter, BottomNav, CartDrawer, VariantCard, Hero…
+│   ├── layout/         admin sidebar/topbar/guard, theme-toggle
+│   └── motion/         Reveal, Stagger, SmoothScroll
+├── modules/<module>/   components · hooks · queries.ts · schemas.ts · api.ts · types.ts
+├── lib/                api/ · query/ · utils.ts · auth/
+├── hooks/  types/  config/
 ```
 
-`services/` from the brief is folded into each module's `api.ts` + `lib/api/` (co-located with
-the feature rather than a flat global services dir). `features/` and `modules/` are unified
-under `modules/` to avoid ambiguity.
+---
+
+## 13. Naming Conventions
+
+Component file/identifier `PascalCase`; hook `useX.ts`/`useX`; non-component module file `kebab-case.ts`;
+zod `xSchema` + inferred `X`; query-key factory `<entity>Keys`; route folder `kebab-case`/`(group)`/`[param]`;
+type `PascalCase` (no `I`); boolean prop `is/has/can`; handler `handleX` (local) / `onX` (prop); constant `SCREAMING_SNAKE`.
 
 ---
 
-## 12. Naming Conventions
+## Per-module backend alignment (before coding)
 
-| Thing                     | Convention                           | Example                                   |
-| ------------------------- | ------------------------------------ | ----------------------------------------- |
-| Component file            | `PascalCase.tsx`                     | `ProductCard.tsx`, `AddToCartButton.tsx`  |
-| Component                 | `PascalCase`                         | `ProductCard`                             |
-| Hook file & fn            | `useX.ts` / `useX`                   | `useProductList.ts` → `useProductList`    |
-| Non-component module file | `kebab-case.ts`                      | `queries.ts`, `api.ts`, `order-status.ts` |
-| zod schema                | `xSchema` + inferred `X` type        | `loginSchema` → `type LoginInput`         |
-| Query-key factory         | `<entity>Keys`                       | `productKeys`, `cartKeys`                 |
-| Route folder              | `kebab-case` / `(group)` / `[param]` | `(shop)`, `products/[slug]`               |
-| Type / interface          | `PascalCase`, no `I` prefix          | `Product`, `PaginatedResult<T>`           |
-| Boolean prop              | `is/has/can`                         | `isLoading`, `hasError`                   |
-| Event handler             | `handleX` (local), `onX` (prop)      | `handleSubmit`, `onSelect`                |
-| Constant                  | `SCREAMING_SNAKE`                    | `PAGE_SIZE`, `QUERY_STALE_TIME`           |
+1. Read `apps/backend/src/modules/<module>/CLAUDE.md` (endpoints, auth, DTOs). 2. Mirror DTO in `schemas.ts`.
+2. Type responses from the entity/DTO; lists `PaginatedResult<T>`. 4. Handle the error envelope via `ApiError`.
+3. Money/totals from server. 6. Public vs permissioned routes gate UI **and** rely on server enforcement.
 
----
+## Pre-delivery checklist (every screen)
 
-## Backend alignment checklist (per module, before coding)
-
-1. Open `apps/backend/src/modules/<module>/CLAUDE.md` — read endpoints, auth (`@Public` vs `@Permissions`), DTOs.
-2. Mirror DTO validation in `schemas.ts` (field names, optionality, min/max).
-3. Type responses in `types.ts` from the actual entity/DTO; lists are `PaginatedResult<T>`.
-4. Errors are the `{ statusCode, code, message, details, path }` envelope — handle via `ApiError`.
-5. Money/tax/totals come from the server; render, don't compute.
-6. Public routes need no token; permissioned admin routes gate UI **and** rely on server enforcement.
-
-## Pre-delivery checklist (every module)
-
-- [ ] shadcn primitives used; no hand-rolled equivalents
-- [ ] Loading (skeleton) / error (retry) / empty (EmptyState) all handled
-- [ ] Mobile 375px verified; touch targets ≥44px; no horizontal scroll
-- [ ] Labels + `<FormMessage>` below field; first invalid field focused on error
-- [ ] Semantic tokens only (no raw hex / zinc-x in components)
-- [ ] Light + dark contrast ≥4.5:1; focus rings visible; `prefers-reduced-motion` respected
+- [ ] shadcn primitives + extended variants used; no hand-rolled equivalents
+- [ ] Loading (skeleton) / error (retry) / empty (EmptyState) handled
+- [ ] Mobile 375px verified; touch ≥44px; **no horizontal scroll**; bottom-sheet on mobile where modal
+- [ ] Labels + `<FormMessage>` below field; first invalid focused on error
+- [ ] **Semantic tokens only** (no hex / `zinc-x`); `primary`=action, `brand`=accent (not everywhere)
+- [ ] Light + dark contrast ≥4.5:1; visible focus ring; `prefers-reduced-motion` respected
+- [ ] Motion uses tokens/`Reveal`/`Stagger`; GPU transforms only; ≤600ms
 - [ ] lucide icons, canonical map, no emoji; icon-only buttons labeled
-- [ ] Query keys via factory; mutations invalidate correctly
-- [ ] Schema mirrors backend DTO; no invented fields
+- [ ] Query keys via factory; mutations invalidate; **no API/DTO/business-logic change**
 
 ```
 

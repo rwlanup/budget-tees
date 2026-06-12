@@ -18,8 +18,19 @@ export default function HomePage() {
       <TrustBar />
       <CategoryTiles />
       <FeaturedStrip />
-      <VariantRow title="New arrivals" href="/shop" params={{ sort: 'newest', limit: 8 }} />
-      <VariantRow title="On sale" href="/shop" params={{ sort: 'newest', limit: 24 }} onlyOnSale />
+      <VariantRow
+        title="New arrivals"
+        eyebrow="Just dropped"
+        href="/shop"
+        params={{ sort: 'newest', limit: 8 }}
+      />
+      <VariantRow
+        title="On sale"
+        eyebrow="Best value"
+        href="/shop"
+        params={{ sort: 'newest', limit: 24 }}
+        onlyOnSale
+      />
       <BrandStrip />
     </div>
   );

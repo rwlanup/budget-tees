@@ -131,6 +131,7 @@ export class AuthService {
     }
     await this.users.updatePassword(userId, dto.newPassword);
     await this.tokens.revokeAllForUser(userId);
+    this.emitEmail('PASSWORD_CHANGED', user.email, { userId });
     return { success: true };
   }
 

@@ -48,8 +48,7 @@ export function WishlistButton({ skuId, mode = 'card', className }: Props) {
     if (!skuId) return;
     if (!authed) return promptSignIn();
     toggle.mutate(skuId, {
-      onSuccess: (s) =>
-        toast.success(s.wishlisted ? 'Saved to wishlist' : 'Removed from wishlist'),
+      onSuccess: (s) => toast.success(s.wishlisted ? 'Saved to wishlist' : 'Removed from wishlist'),
       onError: () => toast.error('Could not update wishlist'),
     });
   };

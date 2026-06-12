@@ -66,8 +66,7 @@ export interface CreateReturnBody {
 }
 
 export const customerReturnApi = {
-  returnable: (orderId: string) =>
-    apiFetch<Returnable>(`/orders/${orderId}/returnable`),
+  returnable: (orderId: string) => apiFetch<Returnable>(`/orders/${orderId}/returnable`),
   create: (orderId: string, body: CreateReturnBody) =>
     apiFetch<ReturnRequest>(`/orders/${orderId}/returns`, { method: 'POST', body }),
   list: (params: ListReturnsParams = {}) =>

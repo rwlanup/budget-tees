@@ -2,7 +2,10 @@ import { Suspense } from 'react';
 import { PageHeader } from '@/components/shared/page-header';
 import { AdminContactTable } from '@/modules/contact/components/admin-contact-table';
 
-export const metadata = { title: 'Contact messages · Admin', description: 'Triage customer and guest support messages.' };
+export const metadata = {
+  title: 'Contact messages · Admin',
+  description: 'Triage customer and guest support messages.',
+};
 
 export default function ContactMessagesPage() {
   return (

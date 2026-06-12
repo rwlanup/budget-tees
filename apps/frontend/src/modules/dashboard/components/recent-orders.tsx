@@ -24,10 +24,15 @@ export function RecentOrders() {
   const orders = data ?? [];
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
-        <CardTitle className="text-lg">Recent orders</CardTitle>
-        <Button asChild variant="ghost" size="sm">
+    <Card className="h-full overflow-hidden">
+      <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 border-b pb-5">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Commerce
+          </p>
+          <CardTitle className="font-heading text-lg">Recent orders</CardTitle>
+        </div>
+        <Button asChild variant="ghost" size="sm" className="text-brand hover:text-brand-strong">
           <Link href="/admin/orders">View all</Link>
         </Button>
       </CardHeader>
@@ -60,9 +65,12 @@ export function RecentOrders() {
             </TableHeader>
             <TableBody>
               {orders.map((o) => (
-                <TableRow key={o.id}>
+                <TableRow key={o.id} className="group transition-colors">
                   <TableCell>
-                    <Link href={`/admin/orders/${o.id}`} className="font-medium hover:underline">
+                    <Link
+                      href={`/admin/orders/${o.id}`}
+                      className="font-medium tabular-nums transition-colors group-hover:text-brand"
+                    >
                       {o.orderNumber}
                     </Link>
                   </TableCell>

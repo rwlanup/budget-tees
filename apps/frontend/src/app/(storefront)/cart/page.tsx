@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Trash2, Loader2, TriangleAlert } from 'lucide-react';
+import { ShoppingCart, Trash2, Loader2, TriangleAlert, Tag } from 'lucide-react';
 import { StorefrontContainer } from '@/components/storefront/storefront-container';
+import { ProductImage } from '@/components/storefront/product-image';
 import { QuantityStepper } from '@/components/storefront/quantity-stepper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,107 +29,141 @@ export default function CartPage() {
 
   return (
     <StorefrontContainer className="py-8">
-      <h1 className="mb-6 font-heading text-2xl font-bold">Your cart</h1>
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold sm:text-4xl">Your cart</h1>
+        {!isLoading && items.length > 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground tabular-nums">{items.length}</span>{' '}
+            {items.length === 1 ? 'item' : 'items'} ready to check out
+          </p>
+        )}
+      </header>
 
       {isLoading ? (
-        <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
-          <div className="space-y-4">
+        <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
+          <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full" />
+              <Skeleton key={i} className="shimmer h-28 w-full rounded-xl" />
             ))}
           </div>
-          <Skeleton className="h-48 w-full" />
+          <Skeleton className="shimmer h-56 w-full rounded-2xl" />
         </div>
       ) : items.length === 0 ? (
         <EmptyState
+          className="bg-aurora py-16"
           icon={ShoppingCart}
           title="Your cart is empty"
           description="Browse the shop and add items to your cart."
           action={
-            <Button asChild>
+            <Button asChild variant="brand" size="lg">
               <Link href="/shop">Start shopping</Link>
             </Button>
           }
         />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
-          <ul className="divide-y rounded-lg border">
+        <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
+          <ul className="space-y-3">
             {items.map((line) => (
-              <li key={line.itemId} className="flex flex-wrap items-center gap-4 p-4">
-                <div className="min-w-0 flex-1">
+              <li
+                key={line.itemId}
+                className={cn(
+                  'flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-xs transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:gap-5',
+                  line.unavailable && 'opacity-70',
+                )}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-4">
                   <Link
                     href={`/product/${line.productId}`}
-                    className={cn(
-                      'font-medium hover:underline',
-                      line.unavailable && 'text-muted-foreground',
-                    )}
+                    className="shrink-0"
+                    aria-label={line.productName}
                   >
-                    {line.productName}
+                    <ProductImage
+                      src={line.imageUrl}
+                      alt={line.productName}
+                      className="size-20 rounded-lg"
+                    />
                   </Link>
-                  <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/product/${line.productId}`}
+                      className={cn(
+                        'font-medium transition-colors hover:text-brand',
+                        line.unavailable && 'text-muted-foreground',
+                      )}
+                    >
+                      {line.productName}
+                    </Link>
+                  <div className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="tabular-nums">{formatCurrency(line.unitPrice, currency)}</span>
                     {line.onSale && (
-                      <Badge className="bg-success text-success-foreground hover:bg-success">
+                      <Badge variant="success">
+                        <Tag className="size-3" aria-hidden />
                         Sale
                       </Badge>
                     )}
                   </div>
                   {line.unavailable ? (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
-                      <TriangleAlert className="size-3" aria-hidden />
+                    <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
+                      <TriangleAlert className="size-3.5" aria-hidden />
                       No longer available — remove to checkout
                     </p>
                   ) : !line.inStock ? (
-                    <p className="mt-1 text-xs text-warning-foreground">
+                    <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-warning-foreground">
+                      <TriangleAlert className="size-3.5 text-warning" aria-hidden />
                       Only {line.available} left — reduce quantity
                     </p>
                   ) : null}
+                  </div>
                 </div>
 
-                {!line.unavailable && (
-                  <QuantityStepper
-                    value={line.quantity}
-                    max={line.available || 99}
-                    disabled={update.isPending}
-                    onChange={(q) => update.mutate({ itemId: line.itemId, quantity: q })}
-                  />
-                )}
-
-                <div className="w-24 text-right font-medium tabular-nums">
-                  {line.unavailable ? '—' : formatCurrency(line.lineTotal, currency)}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${line.productName}`}
-                  disabled={remove.isPending}
-                  onClick={() => remove.mutate(line.itemId)}
-                >
-                  {remove.isPending ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                  ) : (
-                    <Trash2 className="size-4" aria-hidden />
+                <div className="flex items-center gap-3 border-t border-border pt-4 sm:gap-5 sm:border-0 sm:pt-0">
+                  {!line.unavailable && (
+                    <QuantityStepper
+                      value={line.quantity}
+                      max={line.available || 99}
+                      disabled={update.isPending}
+                      onChange={(q) => update.mutate({ itemId: line.itemId, quantity: q })}
+                    />
                   )}
-                </Button>
+
+                  <div className="ml-auto text-right font-semibold tabular-nums sm:w-24">
+                    {line.unavailable ? '—' : formatCurrency(line.lineTotal, currency)}
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove ${line.productName}`}
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate(line.itemId)}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    {remove.isPending ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
+                      <Trash2 className="size-4" aria-hidden />
+                    )}
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
 
-          <Card className="h-fit p-5 lg:sticky lg:top-24">
+          <Card className="h-fit rounded-2xl p-6 shadow-sm lg:sticky lg:top-24">
             <h2 className="font-heading text-lg font-semibold">Summary</h2>
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-5 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Subtotal</span>
-              <span className="text-lg font-semibold tabular-nums">
+              <span className="text-xl font-bold tabular-nums">
                 {formatCurrency(cart?.subtotal ?? 0, currency)}
               </span>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Taxes, shipping and coupons are applied at checkout.
             </p>
-            <Separator className="my-4" />
+            <Separator className="my-5" />
             {isStaff ? (
-              <p className="rounded-md bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
+              <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
                 Admin accounts can’t place orders. Sign in with a customer account to check out.
               </p>
             ) : (

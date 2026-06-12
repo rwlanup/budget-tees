@@ -9,6 +9,8 @@ import { OrderService } from '../order/services/order.service';
 import { RefundDto } from './dto/payment.dto';
 import { addMoney, round2 } from '../../common/utils/money';
 import { emitEmail } from '../../common/utils/emit-email';
+import { emitNotification } from '../notification/notification-event';
+import { NotificationActorType, NotificationType } from '../notification/enums/notification.enums';
 
 @Injectable()
 export class RefundService {
@@ -62,6 +64,18 @@ export class RefundService {
         refType: 'order',
         refId: order.id,
         userId: order.userId,
+      });
+      // Notify the customer + admins (the admin issuing the refund is suppressed).
+      emitNotification(this.events, {
+        type: NotificationType.PAYMENT_STATUS_UPDATED,
+        actorId: adminId,
+        actorType: NotificationActorType.ADMIN,
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          userId: order.userId,
+          paymentStatus: full ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+        },
       });
     }
 

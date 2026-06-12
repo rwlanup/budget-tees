@@ -47,9 +47,14 @@ export default function PasswordPage() {
 
   return (
     <Card className="max-w-lg p-6">
-      <h2 className="font-heading text-lg font-semibold">Change password</h2>
+      <div>
+        <h2 className="font-heading text-lg font-semibold">Change password</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Choose a strong password you don’t use elsewhere.
+        </p>
+      </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4" noValidate>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-5 space-y-4" noValidate>
           <FormError messages={formError} />
           <FormField
             control={form.control}

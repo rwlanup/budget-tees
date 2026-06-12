@@ -21,9 +21,9 @@ export const createReturnSchema = z
     customerNote: z.string().max(500).optional(),
     items: z.array(createReturnItemSchema).min(1, 'Select at least one item to return.'),
   })
-  .refine(
-    (v) => v.resolutionType !== 'EXCHANGE' || v.items.every((i) => !!i.exchangeSkuId),
-    { message: 'Pick a replacement variant for every item.', path: ['items'] },
-  );
+  .refine((v) => v.resolutionType !== 'EXCHANGE' || v.items.every((i) => !!i.exchangeSkuId), {
+    message: 'Pick a replacement variant for every item.',
+    path: ['items'],
+  });
 
 export type CreateReturnInput = z.infer<typeof createReturnSchema>;

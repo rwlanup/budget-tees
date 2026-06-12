@@ -14,6 +14,11 @@ export class AdminContactController {
     return this.contact.adminList(query);
   }
 
+  @Get('pending-count')
+  pendingCount() {
+    return this.contact.pendingCount();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.contact.findOne(id);

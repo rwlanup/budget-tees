@@ -60,12 +60,19 @@ export function UserDetail({ id }: { id: string }) {
   const update = useUpdateUser(id);
   const deleteUser = useDeleteUser();
 
+  const [isFormSet, setIsFormSet] = React.useState(false);
   const [formError, setFormError] = React.useState<string[] | null>(null);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const form = useForm<UpdateUserInput>({
     resolver: zodResolver(updateUserSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      status: 'ACTIVE',
+      roleId: '',
+    },
     values: user
       ? {
           firstName: user.firstName,
@@ -76,6 +83,10 @@ export function UserDetail({ id }: { id: string }) {
       : undefined,
     mode: 'onTouched',
   });
+
+  React.useEffect(() => {
+    setIsFormSet(!!user);
+  }, [setIsFormSet, user]);
 
   const onSubmit = (values: UpdateUserInput) => {
     setFormError(null);
@@ -109,7 +120,7 @@ export function UserDetail({ id }: { id: string }) {
 
   return (
     <DataState
-      isLoading={isLoading || isRolesLoading}
+      isLoading={isLoading || isRolesLoading || !isFormSet}
       isError={isError}
       onRetry={refetch}
       loadingFallback={<DetailSkeleton />}

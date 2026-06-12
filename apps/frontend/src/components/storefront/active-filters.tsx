@@ -24,7 +24,7 @@ export function ActiveFilters({ ctl }: { ctl: ReturnType<typeof useCatalogParams
   };
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div className="mb-5 flex flex-wrap items-center gap-2">
       {brandName && <Chip label={brandName} onRemove={() => setParam('brandId', null)} />}
       {(params.attributeValueIds ?? []).map((id) => (
         <Chip
@@ -41,7 +41,12 @@ export function ActiveFilters({ ctl }: { ctl: ReturnType<typeof useCatalogParams
       )}
       {params.inStock && <Chip label="In stock" onRemove={() => setParam('inStock', null)} />}
 
-      <Button variant="ghost" size="sm" onClick={reset} className="h-7 px-2 text-xs">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={reset}
+        className="h-8 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
+      >
         Clear all
       </Button>
     </div>
@@ -50,13 +55,16 @@ export function ActiveFilters({ ctl }: { ctl: ReturnType<typeof useCatalogParams
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <Badge variant="secondary" className="gap-1 pr-1">
-      {label}
+    <Badge
+      variant="outline"
+      className="press h-8 gap-1.5 border-brand/30 bg-brand-muted/40 py-0 pr-1 pl-3 text-foreground"
+    >
+      <span className="max-w-48 truncate">{label}</span>
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${label}`}
-        className="rounded-full p-0.5 hover:bg-background/60"
+        className="-mr-0.5 flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-brand hover:text-brand-foreground"
       >
         <X className="size-3" aria-hidden />
       </button>

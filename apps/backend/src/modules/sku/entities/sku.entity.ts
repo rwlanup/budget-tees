@@ -2,6 +2,21 @@ import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Product } from '../../product/entities/product.entity';
 
+/**
+ * Immutable display snapshot of a SKU at a point in time. Stored (e.g. on a
+ * return's exchange item) so the chosen variant's details survive later price,
+ * name, or catalog changes. Mirrors the order-item snapshot shape.
+ */
+export interface SkuSnapshot {
+  skuId: string;
+  skuCode: string;
+  productId: string;
+  productName: string;
+  variant: Record<string, string> | null;
+  unitPrice: number;
+  imageMediaId: string | null;
+}
+
 // numeric(12,2) comes back as string from pg — coerce to number.
 const numeric = {
   to: (v: number) => v,

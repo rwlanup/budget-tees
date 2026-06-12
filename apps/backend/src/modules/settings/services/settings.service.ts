@@ -57,9 +57,7 @@ export class SettingsService {
   getReturnWindowDays = () => this.getNumber('returns.windowDays');
 
   /** Full effective settings (persisted value or default) for admin. */
-  async getAllForAdmin(
-    group?: string,
-  ): Promise<
+  async getAllForAdmin(group?: string): Promise<
     {
       key: string;
       value: unknown;

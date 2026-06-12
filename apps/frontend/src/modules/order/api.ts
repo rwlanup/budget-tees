@@ -18,6 +18,8 @@ export const orderApi = {
 
   get: (id: string) => apiFetch<Order>(`/admin/orders/${id}`),
 
+  pendingCount: () => apiFetch<{ count: number }>('/admin/orders/pending-count'),
+
   updateStatus: (id: string, status: OrderStatus, note?: string) =>
     apiFetch<Order>(`/admin/orders/${id}/status`, { method: 'PATCH', body: { status, note } }),
 

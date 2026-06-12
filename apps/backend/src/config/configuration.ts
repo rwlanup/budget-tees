@@ -15,6 +15,7 @@ export const databaseConfig = registerAs('database', () => ({
   username: process.env.DB_USERNAME ?? 'postgres',
   password: process.env.DB_PASSWORD ?? 'postgres',
   database: process.env.DB_NAME ?? 'budget_tees',
+  logging: process.env.DB_LOGGING ?? 'false',
 }));
 
 export const redisConfig = registerAs('redis', () => ({
@@ -56,8 +57,7 @@ export const paymentConfig = registerAs('payment', () => ({
     // eSewa ePay v2. `secret` = the merchant secret key (HMAC-SHA256 signing key).
     productCode: process.env.ESEWA_PRODUCT_CODE ?? 'EPAYTEST',
     secret: process.env.ESEWA_SECRET ?? '8gBm/:&EnhH.1/q',
-    formUrl:
-      process.env.ESEWA_FORM_URL ?? 'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
+    formUrl: process.env.ESEWA_FORM_URL ?? 'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
     statusUrl:
       process.env.ESEWA_STATUS_URL ?? 'https://rc.esewa.com.np/api/epay/transaction/status/',
   },

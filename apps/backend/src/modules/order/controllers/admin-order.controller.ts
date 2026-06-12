@@ -21,6 +21,11 @@ export class AdminOrderController {
     return this.orders.adminList(query);
   }
 
+  @Get('pending-count')
+  pendingCount() {
+    return this.orders.pendingCount();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.orders.adminFindOne(id);

@@ -1,5 +1,6 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { Media } from '../../media/entities/media.entity';
 
 @Entity('brands')
 export class Brand extends BaseEntity {
@@ -16,6 +17,11 @@ export class Brand extends BaseEntity {
 
   @Column({ type: 'uuid', nullable: true })
   logoMediaId: string | null;
+
+  /** Logo media, eager-loaded on every brand query (FK `logoMediaId`, SET NULL on delete). */
+  @ManyToOne(() => Media, { eager: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'logoMediaId' })
+  logo: Media | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   websiteUrl: string | null;

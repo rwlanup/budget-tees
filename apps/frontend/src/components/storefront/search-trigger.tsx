@@ -33,7 +33,7 @@ export function SearchTrigger() {
             onChange={(e) => setValue(e.target.value)}
             placeholder="Search products…"
             aria-label="Search products"
-            className="w-48 pl-9 lg:w-64"
+            className="w-48 rounded-full border-transparent bg-muted/70 pl-9 transition-colors focus-visible:bg-card lg:w-72"
           />
         </div>
       </form>

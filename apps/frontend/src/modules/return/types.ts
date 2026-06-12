@@ -43,12 +43,25 @@ export const RETURNABLE_ORDER_STATUSES = ['DELIVERED', 'PICKED_UP'] as const;
 /** Customer can cancel a return only while still REQUESTED. */
 export const CANCELLABLE_RETURN_STATUSES: ReturnStatus[] = ['REQUESTED'];
 
+/** Immutable display snapshot of a SKU (mirrors backend SkuSnapshot). */
+export interface SkuSnapshot {
+  skuId: string;
+  skuCode: string;
+  productId: string;
+  productName: string;
+  variant: Record<string, string> | null;
+  unitPrice: number;
+  imageMediaId: string | null;
+}
+
 export interface ReturnItem {
   id: string;
   orderItemId: string;
   skuId: string;
   quantity: number;
   exchangeSkuId: string | null;
+  /** Snapshot of the chosen replacement variant (EXCHANGE only). */
+  exchangeSku: SkuSnapshot | null;
   conditionOnReceipt: ItemCondition | null;
   restock: boolean;
   lineRefundAmount: number | null;

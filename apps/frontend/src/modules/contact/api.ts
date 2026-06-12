@@ -27,6 +27,8 @@ export const adminContactApi = {
   list: (params: AdminListContactParams = {}) =>
     apiFetch<ContactMessageList>(`/admin/contact-messages${toQueryString(params)}`),
 
+  pendingCount: () => apiFetch<{ count: number }>('/admin/contact-messages/pending-count'),
+
   setStatus: (id: string, status: ContactStatus) =>
     apiFetch<ContactMessage>(`/admin/contact-messages/${id}/status`, {
       method: 'PATCH',

@@ -16,10 +16,15 @@ export function LowStockPreview() {
   const skus = (data ?? []).slice(0, 5);
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
-        <CardTitle className="text-lg">Low stock</CardTitle>
-        <Button asChild variant="ghost" size="sm">
+    <Card className="h-full">
+      <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 border-b pb-5">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Inventory
+          </p>
+          <CardTitle className="font-heading text-lg">Low stock</CardTitle>
+        </div>
+        <Button asChild variant="ghost" size="sm" className="text-brand hover:text-brand-strong">
           <Link href="/admin/skus">View all</Link>
         </Button>
       </CardHeader>
@@ -32,19 +37,19 @@ export function LowStockPreview() {
           loadingFallback={<Skeleton className="h-32 w-full" />}
           emptyFallback={<EmptyState icon={PackageCheck} title="All stocked up" />}
         >
-          <ul className="divide-y">
+          <ul className="-mx-2 divide-y">
             {skus.map((sku) => (
-              <li key={sku.id} className="flex items-center justify-between py-2">
+              <li
+                key={sku.id}
+                className="group flex items-center justify-between rounded-lg px-2 py-2.5 transition-colors hover:bg-accent/50"
+              >
                 <Link
                   href={`/admin/products/${sku.productId}?tab=variants`}
-                  className="font-mono text-sm hover:underline"
+                  className="font-mono text-sm transition-colors group-hover:text-brand"
                 >
                   {sku.sku}
                 </Link>
-                <Badge
-                  variant="outline"
-                  className="border-warning tabular-nums text-warning-foreground"
-                >
+                <Badge variant="warning" className="tabular-nums">
                   {skuAvailable(sku)} left
                 </Badge>
               </li>

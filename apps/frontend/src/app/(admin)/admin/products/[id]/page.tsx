@@ -9,8 +9,9 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { ProductDetail } from '@/modules/product/components/product-detail';
+import { Metadata } from 'next';
 
-export const metadata = { title: 'Edit product · Admin', description: 'Edit a product.' };
+export const metadata: Metadata = { title: 'Edit product · Admin', description: 'Edit a product.' };
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

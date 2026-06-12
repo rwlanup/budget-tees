@@ -16,9 +16,9 @@ export default function OrderDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="shimmer h-10 w-48 rounded-lg" />
+        <Skeleton className="shimmer h-24 w-full rounded-xl" />
+        <Skeleton className="shimmer h-64 w-full rounded-xl" />
       </div>
     );
   }

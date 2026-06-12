@@ -9,7 +9,10 @@ import {
 } from '@/components/ui/breadcrumb';
 import { AttributeDetail } from '@/modules/attribute/components/attribute-detail';
 
-export const metadata = { title: 'Edit attribute · Admin', description: 'Edit a product attribute.' };
+export const metadata = {
+  title: 'Edit attribute · Admin',
+  description: 'Edit a product attribute.',
+};
 
 export default async function AttributeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

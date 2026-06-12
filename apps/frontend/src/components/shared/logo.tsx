@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { siteConfig } from '@/config/site';
 
-/** Intrinsic ratio of /public/logo.jpeg (551×511). */
+/** Intrinsic ratio of /public/logo.png (551×511). */
 const RATIO = 551 / 511;
 
 /** Brand logo image. Height-driven; width derived from the source aspect ratio. */
@@ -16,7 +16,7 @@ export function Logo({
 }) {
   return (
     <Image
-      src="/logo.jpeg"
+      src="/logo.png"
       alt={siteConfig.name}
       width={Math.round(height * RATIO)}
       height={height}

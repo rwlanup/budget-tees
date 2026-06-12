@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { ItemCondition } from '../enums/return.enums';
 import { ReturnRequest } from './return-request.entity';
+import { SkuSnapshot } from '../../sku/entities/sku.entity';
 
 const numericNullable = {
   to: (v: number | null) => v,
@@ -29,6 +30,10 @@ export class ReturnItem extends BaseEntity {
 
   @Column({ type: 'uuid', nullable: true })
   exchangeSkuId: string | null;
+
+  /** Snapshot of the chosen replacement SKU (EXCHANGE only) — captured at request time. */
+  @Column({ type: 'jsonb', nullable: true })
+  exchangeSku: SkuSnapshot | null;
 
   @Column({ type: 'enum', enum: ItemCondition, nullable: true })
   conditionOnReceipt: ItemCondition | null;

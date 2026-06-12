@@ -13,6 +13,8 @@ import { CouponRedemptionService } from '../../coupon/coupon-redemption.service'
 import { ListOrdersQueryDto, UpdateOrderStatusDto, FulfillmentDto } from '../dto/order-admin.dto';
 import { paginate, PaginatedResult } from '../../../common/dto/pagination.dto';
 import { emitEmail } from '../../../common/utils/emit-email';
+import { emitNotification } from '../../notification/notification-event';
+import { NotificationActorType, NotificationType } from '../../notification/enums/notification.enums';
 
 const CANCELLABLE = [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING];
 const STOCK_COMMITTED = [OrderStatus.CONFIRMED, OrderStatus.PROCESSING];
@@ -69,6 +71,11 @@ export class OrderService {
     return paginate(items, total, query.page, query.limit);
   }
 
+  /** Count of orders awaiting action (for the admin sidebar badge). */
+  async pendingCount(): Promise<{ count: number }> {
+    return { count: await this.repo.count({ where: { status: OrderStatus.PENDING } }) };
+  }
+
   async adminFindOne(id: string): Promise<Order> {
     const order = await this.repo.findOne({
       where: { id },
@@ -94,7 +101,7 @@ export class OrderService {
       await this.status.record(mgr, order.id, dto.status, dto.note, adminId);
       return order;
     });
-    this.emitStatusUpdate(saved);
+    this.emitStatusUpdate(saved, adminId);
     return saved;
   }
 
@@ -109,7 +116,7 @@ export class OrderService {
       await this.status.record(mgr, order.id, dto.status, 'Fulfillment update', adminId);
       return order;
     });
-    this.emitStatusUpdate(saved);
+    this.emitStatusUpdate(saved, adminId);
     return saved;
   }
 
@@ -122,7 +129,8 @@ export class OrderService {
     const order = await repo.findOne({ where: { id: orderId }, relations: { payments: true } });
     if (!order) return;
     const { status, paidAt } = derivePaymentStatus(order.payments ?? []);
-    await repo.update(orderId, { paymentStatus: status, paidAt });
+    const paymentStatus = status === PaymentStatus.PAID ? PaymentStatus.PAID : PaymentStatus.UNPAID;
+    await repo.update(orderId, { paymentStatus, paidAt });
   }
 
   // ---- hooks called by Payment / Returns ----
@@ -174,7 +182,6 @@ export class OrderService {
         );
       }
       if (order.couponId) await this.coupons.reverse(orderId, mgr);
-      order.status = OrderStatus.CANCELLED;
       await mgr.getRepository(Order).save(order);
       await this.status.record(mgr, orderId, OrderStatus.CANCELLED, 'Payment failed');
       await this.recomputePaymentStatus(orderId, mgr);
@@ -244,7 +251,7 @@ export class OrderService {
       await this.status.record(mgr, order.id, OrderStatus.CANCELLED, note ?? 'Cancelled', actorId);
       return locked;
     });
-    this.emitStatusUpdate(cancelled);
+    this.emitStatusUpdate(cancelled, actorId);
     return cancelled;
   }
 
@@ -257,9 +264,15 @@ export class OrderService {
       refId: order.id,
       userId: order.userId,
     });
+    // System-driven (payment success / COD placement) → notify the customer.
+    emitNotification(this.events, {
+      type: NotificationType.ORDER_STATUS_UPDATED,
+      actorType: NotificationActorType.SYSTEM,
+      order: { id: order.id, orderNumber: order.orderNumber, userId: order.userId, status: order.status },
+    });
   }
 
-  private emitStatusUpdate(order: Order): void {
+  private emitStatusUpdate(order: Order, actorId?: string): void {
     emitEmail(this.events, {
       template: 'ORDER_STATUS_UPDATE',
       to: order.contactEmail,
@@ -267,6 +280,13 @@ export class OrderService {
       refType: 'order',
       refId: order.id,
       userId: order.userId,
+    });
+    // Notify the customer; the acting admin (or the customer who self-cancelled) is suppressed.
+    emitNotification(this.events, {
+      type: NotificationType.ORDER_STATUS_UPDATED,
+      actorId: actorId ?? null,
+      actorType: actorId ? NotificationActorType.ADMIN : NotificationActorType.SYSTEM,
+      order: { id: order.id, orderNumber: order.orderNumber, userId: order.userId, status: order.status },
     });
   }
 

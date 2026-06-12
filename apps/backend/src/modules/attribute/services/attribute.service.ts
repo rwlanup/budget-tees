@@ -108,6 +108,12 @@ export class AttributeService {
     return this.valueRepo.find({ where: { id: In(ids) } });
   }
 
+  /** Like {@link valuesByIds} but eager-loads each value's parent attribute (for its name). */
+  async valuesByIdsWithAttribute(ids: string[]): Promise<AttributeValue[]> {
+    if (!ids.length) return [];
+    return this.valueRepo.find({ where: { id: In(ids) }, relations: ['attribute'] });
+  }
+
   private async guarded(fn: () => Promise<unknown>, msg: string): Promise<void> {
     try {
       await fn();

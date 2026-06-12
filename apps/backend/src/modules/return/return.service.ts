@@ -9,12 +9,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, Repository } from 'typeorm';
 import { emitEmail } from '../../common/utils/emit-email';
+import { emitNotification } from '../notification/notification-event';
+import { NotificationActorType, NotificationType } from '../notification/enums/notification.enums';
 import { ReturnRequest } from './entities/return-request.entity';
 import { ReturnItem } from './entities/return-item.entity';
 import { ResolutionType, ReturnStatus } from './enums/return.enums';
 import { OrderService } from '../order/services/order.service';
 import { OrderStatus, PaymentStatus } from '../order/enums/order.enums';
 import { SkuService } from '../sku/services/sku.service';
+import { SkuSnapshot } from '../sku/entities/sku.entity';
 import { InventoryService } from '../sku/services/inventory.service';
 import { PaymentService } from '../payment/payment.service';
 import { RefundService } from '../payment/refund.service';
@@ -46,7 +49,7 @@ export class ReturnService {
     private readonly dataSource: DataSource,
   ) {}
 
-  private async emitUpdate(req: ReturnRequest): Promise<void> {
+  private async emitUpdate(req: ReturnRequest, actorId?: string): Promise<void> {
     const order = await this.orders.adminFindOne(req.orderId).catch(() => null);
     if (!order) return;
     emitEmail(this.events, {
@@ -56,6 +59,19 @@ export class ReturnService {
       refType: 'return',
       refId: req.id,
       userId: req.userId,
+    });
+    // Admin advanced the return → notify the customer (the acting admin is suppressed).
+    emitNotification(this.events, {
+      type: NotificationType.RETURN_STATUS_UPDATED,
+      actorId: actorId ?? null,
+      actorType: actorId ? NotificationActorType.ADMIN : NotificationActorType.SYSTEM,
+      return: {
+        id: req.id,
+        returnNumber: req.returnNumber,
+        userId: req.userId,
+        status: req.status,
+        orderNumber: order.orderNumber,
+      },
     });
   }
 
@@ -88,6 +104,7 @@ export class ReturnService {
       const lineRefund = round2((orderItem.lineTotal * input.quantity) / orderItem.quantity);
       refundTotal = addMoney(refundTotal, lineRefund);
 
+      let exchangeSku: SkuSnapshot | null = null;
       if (dto.resolutionType === ResolutionType.EXCHANGE) {
         if (!input.exchangeSkuId)
           throw new BadRequestException('exchangeSkuId required for exchange');
@@ -97,12 +114,15 @@ export class ReturnService {
           priceDifference,
           round2((exSku.price - orderItem.unitPrice) * input.quantity),
         );
+        // Freeze the replacement variant's details so they survive later catalog changes.
+        exchangeSku = await this.skus.snapshot(input.exchangeSkuId);
       }
       items.push({
         orderItemId: input.orderItemId,
         skuId: orderItem.skuId,
         quantity: input.quantity,
         exchangeSkuId: input.exchangeSkuId ?? null,
+        exchangeSku,
         lineRefundAmount: lineRefund,
       });
     }
@@ -124,6 +144,13 @@ export class ReturnService {
         items: items as ReturnItem[],
       }),
     );
+    // Notify admins of the new return (the requesting customer is not self-notified).
+    emitNotification(this.events, {
+      type: NotificationType.RETURN_CREATED,
+      actorId: userId,
+      actorType: NotificationActorType.CUSTOMER,
+      return: { id: request.id, returnNumber: request.returnNumber, userId },
+    });
     return this.findOne(request.id);
   }
 
@@ -166,7 +193,15 @@ export class ReturnService {
       throw new ConflictException('Only requested returns can be cancelled');
     }
     req.status = ReturnStatus.CANCELLED;
-    return this.reqRepo.save(req);
+    const saved = await this.reqRepo.save(req);
+    // Notify admins of the cancellation (the customer who cancelled is not self-notified).
+    emitNotification(this.events, {
+      type: NotificationType.RETURN_CANCELLED,
+      actorId: userId,
+      actorType: NotificationActorType.CUSTOMER,
+      return: { id: saved.id, returnNumber: saved.returnNumber, userId: saved.userId },
+    });
+    return saved;
   }
 
   async review(id: string, dto: ReviewReturnDto, adminId: string): Promise<ReturnRequest> {
@@ -177,7 +212,7 @@ export class ReturnService {
     req.adminNote = dto.adminNote ?? null;
     req.processedBy = adminId;
     const saved = await this.reqRepo.save(req);
-    await this.emitUpdate(saved);
+    await this.emitUpdate(saved, adminId);
     return saved;
   }
 
@@ -196,7 +231,7 @@ export class ReturnService {
     req.status = ReturnStatus.RECEIVED;
     req.processedBy = adminId;
     const saved = await this.reqRepo.save(req);
-    await this.emitUpdate(saved);
+    await this.emitUpdate(saved, adminId);
     return saved;
   }
 
@@ -253,7 +288,7 @@ export class ReturnService {
     req.resolvedAt = new Date();
     req.processedBy = adminId;
     const saved = await this.reqRepo.save(req);
-    await this.emitUpdate(saved);
+    await this.emitUpdate(saved, adminId);
     return saved;
   }
 

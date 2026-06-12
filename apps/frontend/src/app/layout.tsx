@@ -1,26 +1,33 @@
 import type { Metadata } from 'next';
-import { Rubik, Nunito_Sans } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/lib/query/providers';
 import { Toaster } from '@/components/ui/sonner';
 
-const rubik = Rubik({
+// Display / headings — editorial, fashion-forward grotesque
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  variable: '--font-rubik',
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-bricolage',
   display: 'swap',
 });
 
-const nunito = Nunito_Sans({
+// Body / UI — clean, neutral, highly legible
+const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-nunito',
+  variable: '--font-inter',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: { default: 'Budget Tees', template: '%s — Budget Tees' },
   description: 'Budget Tees — quality tees that fit your budget.',
+  icons: {
+    apple: '/favicon/apple-touch-icon.png',
+    icon: '/favicon/favicon.svg',
+    shortcut: '/favicon/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -29,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${rubik.variable} ${nunito.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${bricolage.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
         <Toaster richColors position="top-right" />

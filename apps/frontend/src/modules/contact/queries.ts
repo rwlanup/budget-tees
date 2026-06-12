@@ -20,6 +20,7 @@ export function useSendContactMessage() {
 export const adminContactKeys = {
   all: ['admin-contact-messages'] as const,
   list: (params: AdminListContactParams) => [...adminContactKeys.all, params] as const,
+  pendingCount: ['admin-contact-messages', 'pending-count'] as const,
 };
 
 export function useAdminContactMessages(params: AdminListContactParams) {
@@ -27,6 +28,14 @@ export function useAdminContactMessages(params: AdminListContactParams) {
     queryKey: adminContactKeys.list(params),
     queryFn: () => adminContactApi.list(params),
     placeholderData: (prev) => prev,
+  });
+}
+
+/** Count of PENDING contact messages — for the admin sidebar badge. */
+export function useContactPendingCount() {
+  return useQuery({
+    queryKey: adminContactKeys.pendingCount,
+    queryFn: () => adminContactApi.pendingCount(),
   });
 }
 

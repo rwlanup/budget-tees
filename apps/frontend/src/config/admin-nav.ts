@@ -28,6 +28,8 @@ export interface NavItem {
   icon: LucideIcon;
   /** Not yet implemented — rendered disabled until its module ships. */
   soon?: boolean;
+  /** Live count badge to render beside the title (resolved in AdminNavList). */
+  badge?: 'low-stock' | 'pending-orders' | 'pending-contact';
 }
 
 export interface NavGroup {
@@ -56,7 +58,7 @@ export const adminNav: NavGroup[] = [
       { title: 'Brands', href: '/admin/brands', icon: Award },
       { title: 'Products', href: '/admin/products', icon: Shirt },
       { title: 'Attributes', href: '/admin/attributes', icon: SlidersHorizontal },
-      { title: 'Low Stock', href: '/admin/skus', icon: Boxes },
+      { title: 'Low Stock', href: '/admin/skus', icon: Boxes, badge: 'low-stock' },
     ],
   },
   {
@@ -70,11 +72,11 @@ export const adminNav: NavGroup[] = [
   {
     label: 'Commerce',
     items: [
-      { title: 'Orders', href: '/admin/orders', icon: ShoppingBag },
+      { title: 'Orders', href: '/admin/orders', icon: ShoppingBag, badge: 'pending-orders' },
       { title: 'Payments', href: '/admin/payments', icon: CreditCard },
       { title: 'Returns', href: '/admin/returns', icon: Undo2 },
       { title: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
-      { title: 'Contact', href: '/admin/contact-messages', icon: Mail },
+      { title: 'Contact', href: '/admin/contact-messages', icon: Mail, badge: 'pending-contact' },
     ],
   },
   {

@@ -7,7 +7,7 @@ Converts a cart into an immutable order: validate → snapshot → reserve → t
 - `services/checkout.service.ts` — the big transaction. Reserves stock (`InventoryService.reserve`, locked, same txn), redeems coupon, marks cart CONVERTED, generates `orderNumber` via `order_number_seq`.
 - `services/order.service.ts` — list/detail/cancel + **hooks called by Payment/Returns**: `onPaymentSuccess` (commit stock + PENDING→CONFIRMED on first capture, else status untouched), `onPaymentFailure` (PENDING→CANCELLED, release + coupon reverse), `markCodConfirmed` (commit at placement), `markRefunded` (status→REFUNDED if full), `recomputePaymentStatus` (the single writer of `order.paymentStatus`).
 - `services/order-status.service.ts` — transition state machine (branches DELIVERY vs PICKUP) + history.
-- `services/invoice.service.ts` — order invoice PDF (pdfkit, standard Helvetica fonts, no headless browser); store name/support email from Settings. Streamed via `sendInvoice` (exported from `order.controller.ts`) — customer `GET /orders/:idOrNumber/invoice` (own) + admin `GET /admin/orders/:id/invoice`.
+- `services/invoice.service.ts` — order invoice PDF (pdfkit, standard Helvetica fonts, no headless browser); store name/support email from Settings. Reads `ReturnRequest` (repo registered in `OrderModule` `forFeature` — entity-only, no `ReturnModule` import → no circular DI) to list any returns + status on the invoice. Streamed via `sendInvoice` (exported from `order.controller.ts`) — customer `GET /orders/:idOrNumber/invoice` (own) + admin `GET /admin/orders/:id/invoice`.
 
 ## Conventions / gotchas
 

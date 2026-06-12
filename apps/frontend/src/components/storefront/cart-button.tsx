@@ -21,7 +21,7 @@ export function CartButton({ count = 0 }: { count?: number }) {
     >
       <ShoppingCart className="size-5" aria-hidden />
       {count > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums">
+        <span className="reveal-scale absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold leading-4 text-brand-foreground tabular-nums ring-2 ring-background">
           {count > 99 ? '99+' : count}
         </span>
       )}

@@ -30,6 +30,7 @@ import { FeaturedProductModule } from './modules/featured-product/featured-produ
 import { StorefrontModule } from './modules/storefront/storefront.module';
 import { ReviewModule } from './modules/review/review.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -49,7 +50,7 @@ import { ContactModule } from './modules/contact/contact.module';
         autoLoadEntities: true,
         synchronize: false,
         migrations: [__dirname + '/migrations/*.{ts,js}'],
-        logging: true,
+        logging: config.get<string>('database.logging') === 'true',
       }),
     }),
     // Feature modules (migration order).
@@ -78,6 +79,7 @@ import { ContactModule } from './modules/contact/contact.module';
     StorefrontModule,
     ReviewModule,
     ContactModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}

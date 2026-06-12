@@ -25,6 +25,11 @@ export class WishlistController {
     return this.wishlist.toggle(userId, dto.skuId);
   }
 
+  @Get('count')
+  count(@CurrentUser('id') userId: string) {
+    return this.wishlist.count(userId);
+  }
+
   @Get('contains/:skuId')
   contains(@CurrentUser('id') userId: string, @Param('skuId', ParseUUIDPipe) skuId: string) {
     return this.wishlist.contains(userId, skuId);

@@ -1,6 +1,9 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, In, Repository } from 'typeorm';
+import { emitNotification } from '../../notification/notification-event';
+import { NotificationActorType, NotificationType } from '../../notification/enums/notification.enums';
 import { Order, AddressSnapshot } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { FulfillmentMethod, OrderStatus, PaymentStatus } from '../enums/order.enums';
@@ -45,6 +48,7 @@ export class CheckoutService {
     private readonly dataSource: DataSource,
     private readonly media: MediaService,
     private readonly productMedia: ProductMediaService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async checkout(userId: string, dto: CheckoutDto, idempotencyKey?: string): Promise<Order> {
@@ -80,12 +84,16 @@ export class CheckoutService {
     for (const line of priced.items) {
       const product = await this.products.findOneByIdOrSlug(line.productId, false);
       const sku = await this.skus.findOne(line.skuId);
-      const media = sku.imageMediaId ? await this.media.findOne(sku.imageMediaId) : await this.productMedia.getPrimaryMedia(product.id);
+      const media = sku.imageMediaId
+        ? await this.media.findOne(sku.imageMediaId)
+        : await this.productMedia.getPrimaryMedia(product.id);
       const skuAttributeValueIds = await this.skus.comboOf(sku.id);
-      const skuAttributes = skuAttributeValueIds.length ? await this.valueRepo.find({
-        where: { id: In(skuAttributeValueIds) },
-        relations: ['attribute'],
-      }) : [];
+      const skuAttributes = skuAttributeValueIds.length
+        ? await this.valueRepo.find({
+            where: { id: In(skuAttributeValueIds) },
+            relations: ['attribute'],
+          })
+        : [];
       const variant: Record<string, string> | null = skuAttributes.length
         ? Object.fromEntries(skuAttributes.map((sav) => [sav.attribute.name, sav.value]))
         : null;
@@ -200,7 +208,7 @@ export class CheckoutService {
       ...itemsData.map((l) => round2((l.unitBasePrice - l.unitPrice) * l.quantity)),
     );
 
-    return this.dataSource.transaction(async (mgr) => {
+    const placed = await this.dataSource.transaction(async (mgr) => {
       // Reserve stock for each line (locked).
       for (const l of itemsData) {
         await this.inventory.reserve(l.sku.id, l.quantity, { refType: 'order' }, mgr);
@@ -271,6 +279,15 @@ export class CheckoutService {
 
       return mgr.getRepository(Order).findOneOrFail({ where: { id: order.id } });
     });
+
+    // Notify admins of the new order (the customer who placed it is not self-notified).
+    emitNotification(this.events, {
+      type: NotificationType.ORDER_PLACED,
+      actorId: userId,
+      actorType: NotificationActorType.CUSTOMER,
+      order: { id: placed.id, orderNumber: placed.orderNumber, userId: placed.userId },
+    });
+    return placed;
   }
 
   private snapshot(a: AddressInputDto): AddressSnapshot {

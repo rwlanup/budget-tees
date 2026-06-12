@@ -33,8 +33,8 @@ export function OrderTracking({
 }) {
   if (TERMINAL[status]) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
-        <X className="size-4 text-destructive" aria-hidden />
+      <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm font-medium text-destructive">
+        <X className="size-4 shrink-0" aria-hidden />
         {TERMINAL[status]}
       </div>
     );
@@ -44,29 +44,39 @@ export function OrderTracking({
   const current = steps.findIndex((s) => s.status === status);
 
   return (
-    <ol className="flex items-center">
+    <ol className="flex items-start">
       {steps.map((step, i) => {
         const done = i < current;
         const active = i === current;
         return (
           <li key={step.status} className="flex flex-1 items-center last:flex-none">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex flex-col items-center gap-1.5">
               <span
                 className={cn(
-                  'flex size-7 items-center justify-center rounded-full border text-xs font-medium',
+                  'flex size-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
                   done && 'border-success bg-success text-success-foreground',
-                  active && 'border-primary bg-primary text-primary-foreground',
-                  !done && !active && 'border-border text-muted-foreground',
+                  active && 'border-brand bg-brand text-brand-foreground shadow-brand',
+                  !done && !active && 'border-border bg-card text-muted-foreground',
                 )}
               >
                 {done ? <Check className="size-4" aria-hidden /> : i + 1}
               </span>
-              <span className={cn('text-[11px]', active ? 'font-medium' : 'text-muted-foreground')}>
+              <span
+                className={cn(
+                  'text-center text-[11px] leading-tight',
+                  active ? 'font-semibold text-foreground' : 'text-muted-foreground',
+                )}
+              >
                 {step.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <span className={cn('mx-1 h-0.5 flex-1', i < current ? 'bg-success' : 'bg-border')} />
+              <span
+                className={cn(
+                  'mx-1 mt-4 h-0.5 flex-1 self-start rounded-full',
+                  i < current ? 'bg-success' : 'bg-border',
+                )}
+              />
             )}
           </li>
         );

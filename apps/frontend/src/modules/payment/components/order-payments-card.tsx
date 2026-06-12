@@ -29,8 +29,7 @@ export function OrderPaymentsCard({ order }: { order: Order }) {
         toast.success(`${order.orderNumber} marked paid`);
         setConfirmOpen(false);
       },
-      onError: (err) =>
-        setError(err instanceof ApiError ? err.messages[0] : 'Couldn’t mark paid'),
+      onError: (err) => setError(err instanceof ApiError ? err.messages[0] : 'Couldn’t mark paid'),
     });
   };
 

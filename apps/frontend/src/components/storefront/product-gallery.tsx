@@ -41,7 +41,11 @@ export function ProductGallery({
 
   return (
     <div className="space-y-3">
-      <ProductImage src={mainUrl} alt={productName} className="w-full" />
+      <ProductImage
+        src={mainUrl}
+        alt={productName}
+        className="w-full overflow-hidden rounded-2xl border shadow-sm"
+      />
       {uniqueImages.length > 0 && (
         <div className="grid grid-cols-5 gap-2">
           {uniqueImages.map((img) => (
@@ -51,8 +55,10 @@ export function ProductGallery({
               onClick={() => setActive(img.url)}
               aria-label="View image"
               className={cn(
-                'overflow-hidden rounded-md border',
-                mainUrl === img.url ? 'ring-2 ring-ring' : 'opacity-80 hover:opacity-100',
+                'press overflow-hidden rounded-xl border transition-all',
+                mainUrl === img.url
+                  ? 'ring-2 ring-brand ring-offset-2 ring-offset-background'
+                  : 'opacity-70 hover:opacity-100',
               )}
             >
               <ProductImage src={img.url} alt={img.alt ?? productName} />

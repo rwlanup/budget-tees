@@ -135,9 +135,7 @@ export function AdminContactTable() {
             icon={MessageSquare}
             title={status || topic ? 'No messages match' : 'No messages yet'}
             description={
-              status || topic
-                ? 'Try a different filter.'
-                : 'Customer contact messages appear here.'
+              status || topic ? 'Try a different filter.' : 'Customer contact messages appear here.'
             }
           />
         }

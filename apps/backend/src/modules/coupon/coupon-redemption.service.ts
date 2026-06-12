@@ -38,7 +38,16 @@ export class CouponRedemptionService {
   ) {}
 
   private fail(reason: string): never {
-    throw new UnprocessableEntityException({ code: reason, valid: false, reason });
+    const messageMap: Record<string, string> = {
+      INVALID_COUPON: 'Invalid coupon code',
+      NOT_STARTED: 'Coupon not active yet',
+      EXPIRED: 'Coupon has expired',
+      USAGE_LIMIT: 'You have reached the usage limit for this coupon',
+      NOT_FIRST_ORDER: 'Coupon valid for first order only',
+      NOT_ELIGIBLE: 'Cart not eligible for this coupon',
+      MIN_ORDER_NOT_MET: 'Minimum order amount not met for this coupon',
+    };
+    throw new UnprocessableEntityException(messageMap[reason] || reason, { cause: reason, description: reason });
   }
 
   async validateOrThrow(code: string, ctx: CouponContext): Promise<CouponResult> {

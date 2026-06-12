@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
+import { Media } from '../media/entities/media.entity';
 import { MediaService } from '../media/services/media.service';
 import { slugify, uniqueSlug } from '../../common/utils/slugify';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
@@ -31,6 +32,8 @@ export class CategoryService {
       where: activeOnly ? { isActive: true } : {},
       order: { sortOrder: 'ASC', name: 'ASC' },
     });
+    // Attach images on the flat list; tree nodes are the same objects (mutated below).
+    await this.loadImages(all);
     const byId = new Map<string, Category>();
     all.forEach((c) => byId.set(c.id, Object.assign(c, { children: [] })));
     const roots: Category[] = [];
@@ -48,6 +51,7 @@ export class CategoryService {
     if (query.parentId) qb.andWhere('c.parentId = :p', { p: query.parentId });
     qb.orderBy('c.sortOrder', 'ASC').addOrderBy('c.name', 'ASC').skip(query.skip).take(query.limit);
     const [items, total] = await qb.getManyAndCount();
+    await this.loadImages(items);
     return paginate(items, total, query.page, query.limit);
   }
 
@@ -55,6 +59,7 @@ export class CategoryService {
     const where = isUuid(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug };
     const cat = await this.repo.findOne({ where });
     if (!cat) throw new NotFoundException('Category not found');
+    await this.loadImages([cat]);
     return cat;
   }
 
@@ -67,11 +72,18 @@ export class CategoryService {
        ) SELECT * FROM anc WHERE id <> $1`,
       [id],
     );
-    return (rows as Category[]).reverse(); // root -> parent order
+    const ancestors = (rows as Category[]).reverse(); // root -> parent order
+    await this.loadImages(ancestors);
+    return ancestors;
   }
 
-  children(id: string): Promise<Category[]> {
-    return this.repo.find({ where: { parentId: id }, order: { sortOrder: 'ASC', name: 'ASC' } });
+  async children(id: string): Promise<Category[]> {
+    const kids = await this.repo.find({
+      where: { parentId: id },
+      order: { sortOrder: 'ASC', name: 'ASC' },
+    });
+    await this.loadImages(kids);
+    return kids;
   }
 
   /** All descendant ids (excluding self) via recursive CTE. */
@@ -157,6 +169,27 @@ export class CategoryService {
     } else {
       await this.repo.delete({ id });
     }
+  }
+
+  /**
+   * Resolve `imageMediaId` → `image` (transient) for the given categories. Batched
+   * + deduped; a missing/not-ready media resolves to `null` rather than throwing.
+   */
+  private async loadImages(categories: Category[]): Promise<void> {
+    const ids = [
+      ...new Set(categories.map((c) => c.imageMediaId).filter((id): id is string => !!id)),
+    ];
+    if (ids.length === 0) {
+      for (const c of categories) c.image = null;
+      return;
+    }
+    const resolved = await Promise.all(ids.map((id) => this.media.findOne(id).catch(() => null)));
+    const byId = new Map<string, Media>();
+    resolved.forEach((m, i) => {
+      if (m) byId.set(ids[i], m);
+    });
+    for (const c of categories)
+      c.image = c.imageMediaId ? (byId.get(c.imageMediaId) ?? null) : null;
   }
 
   private async resolveSlug(base: string, excludeId?: string): Promise<string> {

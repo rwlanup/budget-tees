@@ -8,6 +8,7 @@ import { cartApi } from '@/modules/cart/api';
 import { cartKeys } from '@/modules/cart/queries';
 import { wishlistKeys } from '@/modules/wishlist/queries';
 import { getCartToken, clearCartToken } from '@/lib/storefront/cart-token';
+import { useRouter } from 'next/navigation';
 
 export const authKeys = {
   me: ['auth', 'me'] as const,
@@ -21,7 +22,7 @@ export function useMe() {
     queryKey: authKeys.me,
     queryFn: async () => {
       const res = await authApi.me();
-      if(res) {
+      if (res) {
         queryClient.invalidateQueries({ queryKey: cartKeys.all });
       }
       return res;
@@ -74,9 +75,16 @@ export function useResendVerification() {
 }
 
 export function useChangePassword() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
   return useMutation({
     mutationFn: (body: { currentPassword: string; newPassword: string }) =>
       authApi.changePassword(body),
+    onSuccess: () => {
+      useAuthStore.getState().clear();
+      queryClient.clear();
+      router.replace('/sign-in');
+    },
   });
 }
 

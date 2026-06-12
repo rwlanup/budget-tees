@@ -21,26 +21,26 @@ export function QuantityStepper({
   const set = (n: number) => onChange(Math.max(1, Math.min(cap, n)));
 
   return (
-    <div className="inline-flex items-center rounded-md border">
+    <div className="inline-flex items-center rounded-xl border bg-card shadow-xs">
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="size-9 rounded-r-none"
+        className="size-11 rounded-r-none"
         aria-label="Decrease quantity"
         disabled={disabled || value <= 1}
         onClick={() => set(value - 1)}
       >
         <Minus className="size-4" aria-hidden />
       </Button>
-      <span className="w-10 text-center text-sm font-medium tabular-nums" aria-live="polite">
+      <span className="w-10 text-center text-sm font-semibold tabular-nums" aria-live="polite">
         {value}
       </span>
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="size-9 rounded-l-none"
+        className="size-11 rounded-l-none"
         aria-label="Increase quantity"
         disabled={disabled || value >= cap}
         onClick={() => set(value + 1)}

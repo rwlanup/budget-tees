@@ -8,6 +8,7 @@ import { CartController } from './cart.controller';
 import { SkuModule } from '../sku/sku.module';
 import { ProductModule } from '../product/product.module';
 import { ProductSaleModule } from '../product-sale/product-sale.module';
+import { MediaModule } from '../media/media.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ProductSaleModule } from '../product-sale/product-sale.module';
     SkuModule,
     ProductModule,
     ProductSaleModule,
+    MediaModule,
   ],
   controllers: [CartController],
   providers: [CartService, CartPricingService],

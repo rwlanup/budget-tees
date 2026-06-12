@@ -39,6 +39,12 @@ export class SkuController {
     return this.skus.lowStock();
   }
 
+  @Get('low-stock/count')
+  @Permissions(PERMISSIONS.SKU_MANAGE)
+  lowStockCount() {
+    return this.skus.lowStockCount();
+  }
+
   @Get(':id')
   @Public()
   findOne(@Param('id', ParseUUIDPipe) id: string) {

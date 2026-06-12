@@ -16,9 +16,7 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     const { product } = await catalogApi.productDetail(slug);
-    const title = product.metaTitle?.trim()
-      ? { absolute: product.metaTitle.trim() }
-      : product.name;
+    const title = product.metaTitle?.trim() ? { absolute: product.metaTitle.trim() } : product.name;
     const source =
       product.metaDescription?.trim() ||
       product.shortDescription?.trim() ||

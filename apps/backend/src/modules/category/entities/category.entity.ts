@@ -1,5 +1,6 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { Media } from '../../media/entities/media.entity';
 
 /**
  * Adjacency-list tree (self-referencing parentId). Subtree/ancestor queries use
@@ -31,6 +32,9 @@ export class Category extends BaseEntity {
 
   @Column({ type: 'uuid', nullable: true })
   imageMediaId: string | null;
+
+  /** Transient (non-persisted): resolved media for `imageMediaId`, loaded on reads. */
+  image?: Media | null;
 
   @Column({ type: 'int', default: 0 })
   sortOrder: number;

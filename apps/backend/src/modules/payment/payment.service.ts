@@ -9,6 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Repository } from 'typeorm';
 import { emitEmail } from '../../common/utils/emit-email';
+import { emitNotification } from '../notification/notification-event';
+import { NotificationActorType, NotificationType } from '../notification/enums/notification.enums';
 import { Payment } from './entities/payment.entity';
 import { PaymentEvent } from './entities/payment-event.entity';
 import { PaymentRecordStatus } from './enums/payment.enums';
@@ -86,11 +88,20 @@ export class PaymentService {
   /** Build the POST /payments/initiate response from a payment row (also used for replays). */
   private async buildInitiateResponse(order: Order, payment: Payment) {
     if (payment.method === PaymentMethod.COD) {
-      return { paymentId: payment.id, method: payment.method, status: 'PENDING', orderStatus: 'CONFIRMED' };
+      return {
+        paymentId: payment.id,
+        method: payment.method,
+        status: 'PENDING',
+        orderStatus: 'CONFIRMED',
+      };
     }
     // ePay form is a pure local signing — safe to rebuild for an idempotent replay.
     const init = await this.gateway(payment.method).initiate(order, payment);
-    return { paymentId: payment.id, gatewayRef: payment.gatewayRef ?? init.gatewayRef, redirect: init.redirect };
+    return {
+      paymentId: payment.id,
+      gatewayRef: payment.gatewayRef ?? init.gatewayRef,
+      redirect: init.redirect,
+    };
   }
 
   /**
@@ -191,18 +202,21 @@ export class PaymentService {
             userId: order.userId,
           });
         }
+        this.emitPaymentNotification(order, 'PAID');
       }
       return { status: 'SUCCESS', success: true, orderNumber };
     }
 
     if (status === 'FAILED' || status === 'CANCELED') {
       if (!this.isTerminal(payment.status)) {
-        payment.status = PaymentRecordStatus.FAILED;
+        payment.status =
+          status === 'FAILED' ? PaymentRecordStatus.FAILED : PaymentRecordStatus.CANCELLED;
         payment.failedAt = new Date();
         await this.repo.save(payment);
         await this.orders.onPaymentFailure(payment.orderId);
+        this.emitPaymentNotification(order, 'FAILED');
       }
-      return { status: 'FAILED', success: false, orderNumber };
+      return { status, success: false, orderNumber };
     }
 
     if (status === 'REVERTED') {
@@ -210,6 +224,7 @@ export class PaymentService {
         payment.status = PaymentRecordStatus.REFUNDED;
         await this.repo.save(payment);
         await this.orders.markRefunded(payment.orderId, true);
+        this.emitPaymentNotification(order, 'REFUNDED');
       }
       return { status: 'REFUNDED', success: false, orderNumber };
     }
@@ -257,7 +272,7 @@ export class PaymentService {
    * table is the source of truth — then refreshes the order: a still-PENDING order is
    * confirmed and its reserved stock committed; any later status is left unchanged.
    */
-  async markOrderPaid(orderId: string): Promise<void> {
+  async markOrderPaid(orderId: string, actorId?: string): Promise<void> {
     const order = await this.orders.adminFindOne(orderId);
     if (order.paymentStatus === PaymentStatus.PAID) {
       throw new ConflictException('Order is already paid');
@@ -288,5 +303,23 @@ export class PaymentService {
     await this.repo.save(payment);
 
     await this.orders.onPaymentSuccess(orderId);
+    // Admin-recorded payment → notify the customer + other admins (acting admin suppressed).
+    this.emitPaymentNotification(order, 'PAID', actorId);
+  }
+
+  /** Notify the customer + payment-managing admins of a payment status change. */
+  private emitPaymentNotification(order: Order | null, paymentStatus: string, actorId?: string): void {
+    if (!order) return;
+    emitNotification(this.events, {
+      type: NotificationType.PAYMENT_STATUS_UPDATED,
+      actorId: actorId ?? null,
+      actorType: actorId ? NotificationActorType.ADMIN : NotificationActorType.SYSTEM,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        userId: order.userId,
+        paymentStatus,
+      },
+    });
   }
 }

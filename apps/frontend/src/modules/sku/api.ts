@@ -65,4 +65,6 @@ export const skuApi = {
   remove: (id: string) => apiFetch<{ deleted: boolean }>(`/skus/${id}`, { method: 'DELETE' }),
 
   lowStock: () => apiFetch<Sku[]>('/skus/low-stock'),
+
+  lowStockCount: () => apiFetch<{ count: number }>('/skus/low-stock/count'),
 };

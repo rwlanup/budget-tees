@@ -12,12 +12,14 @@ import type { VariantListParams } from '@/modules/catalog/types';
  */
 export function VariantRow({
   title,
+  eyebrow,
   href,
   params,
   onlyOnSale = false,
   max = 8,
 }: {
   title: string;
+  eyebrow?: string;
   href?: string;
   params: VariantListParams;
   onlyOnSale?: boolean;
@@ -31,8 +33,8 @@ export function VariantRow({
   if (!isLoading && items.length === 0) return null;
 
   return (
-    <StorefrontContainer className="py-10">
-      <SectionHeading title={title} href={href} />
+    <StorefrontContainer className="py-14 sm:py-20">
+      <SectionHeading title={title} eyebrow={eyebrow} href={href} />
       <VariantGrid variants={items} isLoading={isLoading} skeletonCount={max} />
     </StorefrontContainer>
   );

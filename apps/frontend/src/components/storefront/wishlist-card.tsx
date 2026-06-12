@@ -7,13 +7,18 @@ import { Button } from '@/components/ui/button';
 import { PriceTag } from './price-tag';
 import { ProductImage } from './product-image';
 import { useProductPrimaryImage } from '@/modules/catalog/queries';
+import { useMedia } from '@/modules/media/queries';
+import { getVariantUrl } from '@/modules/media/lib';
 import { useMoveToCart, useRemoveWishlist } from '@/modules/wishlist/queries';
 import { useCartUiStore } from '@/lib/storefront/cart-ui-store';
 import { ApiError } from '@/lib/api/client';
 import type { WishlistItem } from '@/modules/wishlist/types';
 
 export function WishlistCard({ item }: { item: WishlistItem }) {
-  const { data: image } = useProductPrimaryImage(item.productId);
+  const { data: skuMedia } = useMedia(item.imageMediaId);
+  const { data: productImage } = useProductPrimaryImage(item.productId);
+  // Prefer the saved variant's own image; fall back to the product's primary.
+  const image = (skuMedia ? getVariantUrl(skuMedia, 'MEDIUM') : null) ?? productImage;
   const move = useMoveToCart();
   const remove = useRemoveWishlist();
   const openCart = useCartUiStore((s) => s.openCart);
@@ -35,12 +40,17 @@ export function WishlistCard({ item }: { item: WishlistItem }) {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border bg-card">
-      <Link href={href} aria-label={item.name}>
-        <ProductImage src={image ?? null} alt={item.name} />
+    <div className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <Link href={href} aria-label={item.name} className="overflow-hidden">
+        <div className="transition-transform duration-500 ease-out-expo group-hover:scale-105">
+          <ProductImage src={image ?? null} alt={item.name} />
+        </div>
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <Link href={href} className="line-clamp-2 text-sm font-medium hover:underline">
+        <Link
+          href={href}
+          className="line-clamp-2 text-sm font-medium transition-colors hover:text-brand"
+        >
           {item.name}
         </Link>
         <PriceTag

@@ -9,7 +9,10 @@ import {
 } from '@/components/ui/breadcrumb';
 import { RoleDetail } from '@/modules/role/components/role-detail';
 
-export const metadata = { title: 'Edit role · Admin', description: 'Edit a role and its permissions.' };
+export const metadata = {
+  title: 'Edit role · Admin',
+  description: 'Edit a role and its permissions.',
+};
 
 export default async function RoleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

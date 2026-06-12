@@ -39,7 +39,11 @@ export function MobileNav() {
         </SheetHeader>
 
         <nav className="flex flex-col px-4 pb-8">
-          <Link href="/shop" onClick={close} className="py-3 text-sm font-medium">
+          <Link
+            href="/shop"
+            onClick={close}
+            className="-mx-2 rounded-lg px-2 py-3 text-sm font-semibold transition-colors hover:bg-accent hover:text-brand"
+          >
             Shop all
           </Link>
           <Separator />

@@ -41,10 +41,10 @@ export function CouponField({
 
   if (applied) {
     return (
-      <div className="flex items-center justify-between rounded-md border border-success/40 bg-success/5 px-3 py-2 text-sm">
+      <div className="flex items-center justify-between rounded-lg border border-success/40 bg-success/5 px-3 py-2.5 text-sm">
         <span className="flex items-center gap-2">
-          <Check className="size-4 text-success" aria-hidden />
-          <span className="font-medium">{applied.code}</span> applied
+          <Check className="size-4 shrink-0 text-success" aria-hidden />
+          <span className="font-semibold text-success">{applied.code}</span> applied
         </span>
         <Button
           type="button"

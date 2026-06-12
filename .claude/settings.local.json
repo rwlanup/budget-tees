@@ -20,7 +20,9 @@
       "Bash(ls \"app/\\(admin\\)/admin/returns\")",
       "Bash(cat lib/api/query-string.ts)",
       "Bash(cat config/admin-nav.ts)",
-      "Bash(pnpm exec *)"
+      "Bash(pnpm exec *)",
+      "Bash(pnpm --filter frontend add motion embla-carousel-react vaul cmdk lenis)",
+      "Bash(npx tsc *)"
     ]
   }
 }

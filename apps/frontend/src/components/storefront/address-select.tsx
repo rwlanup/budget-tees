@@ -39,7 +39,13 @@ export function AddressSelect({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addresses]);
 
-  if (isLoading) return <Skeleton className="h-24 w-full" />;
+  if (isLoading)
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Skeleton className="shimmer h-28 w-full rounded-xl" />
+        <Skeleton className="shimmer h-28 w-full rounded-xl" />
+      </div>
+    );
 
   return (
     <div className="space-y-3">
@@ -51,16 +57,21 @@ export function AddressSelect({
               key={a.id}
               type="button"
               onClick={() => onSelect(a)}
+              aria-pressed={active}
               className={cn(
-                'relative rounded-lg border p-3 text-left text-sm',
-                active ? 'border-primary ring-1 ring-primary' : 'hover:bg-accent',
+                'press relative rounded-xl border p-4 text-left text-sm transition-colors',
+                active
+                  ? 'border-brand bg-brand-muted/40 ring-2 ring-brand/30'
+                  : 'border-border hover:border-foreground/20 hover:bg-accent',
               )}
             >
               {active && (
-                <Check className="absolute right-2 top-2 size-4 text-primary" aria-hidden />
+                <span className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-full bg-brand text-brand-foreground">
+                  <Check className="size-3" aria-hidden />
+                </span>
               )}
-              <p className="font-medium">{a.label || a.recipientName}</p>
-              <p className="text-muted-foreground">
+              <p className="pr-6 font-semibold">{a.label || a.recipientName}</p>
+              <p className="mt-1 text-muted-foreground">
                 {a.recipientName} · {a.phone}
               </p>
               <p className="text-muted-foreground">

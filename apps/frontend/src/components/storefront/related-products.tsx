@@ -17,8 +17,13 @@ export function RelatedProducts({
   if (!items.length) return null;
 
   return (
-    <section className="mt-12">
-      <h2 className="mb-4 font-heading text-xl font-semibold">You may also like</h2>
+    <section className="mt-16 sm:mt-20">
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-brand">
+        More to love
+      </p>
+      <h2 className="mb-6 font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+        You may also like
+      </h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((v) => (
           <VariantCard key={v.skuId} variant={v} />

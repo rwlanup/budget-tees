@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { AddressForm } from '@/components/storefront/address-form';
+import { Stagger, StaggerItem } from '@/components/motion/reveal';
 import { ApiError } from '@/lib/api/client';
 import { useAddresses, useDeleteAddress, useUpdateAddress } from '@/modules/account/queries';
 import type { UserAddress } from '@/modules/account/types';
@@ -53,9 +54,14 @@ export default function AddressesPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-heading text-lg font-semibold">Addresses</h2>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-lg font-semibold">Addresses</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Saved addresses for faster checkout.
+          </p>
+        </div>
         <Button onClick={openAdd}>
           <Plus className="size-4" aria-hidden />
           Add address
@@ -64,80 +70,88 @@ export default function AddressesPage() {
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="shimmer h-40 w-full rounded-xl" />
+          <Skeleton className="shimmer h-40 w-full rounded-xl" />
         </div>
       ) : !addresses || addresses.length === 0 ? (
         <EmptyState
+          className="bg-aurora"
           icon={MapPin}
           title="No addresses yet"
           description="Add a delivery address to speed up checkout."
           action={<Button onClick={openAdd}>Add address</Button>}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <Stagger className="grid gap-4 sm:grid-cols-2">
           {addresses.map((a) => (
-            <Card key={a.id} className="flex flex-col gap-2 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{a.label || a.recipientName}</span>
-                  <Badge variant="outline">
-                    {a.type === 'BILLING'
-                      ? 'Billing'
-                      : a.type === 'SHIPPING'
-                        ? 'Shipping'
-                        : 'Shipping & Billing'}
-                  </Badge>
-                  {a.isDefault && <Badge variant="secondary">Default</Badge>}
+            <StaggerItem key={a.id}>
+              <Card className="flex h-full flex-col gap-2 p-4 transition-shadow hover:shadow-md">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{a.label || a.recipientName}</span>
+                    <Badge variant="outline">
+                      {a.type === 'BILLING'
+                        ? 'Billing'
+                        : a.type === 'SHIPPING'
+                          ? 'Shipping'
+                          : 'Shipping & Billing'}
+                    </Badge>
+                    {a.isDefault && (
+                      <Badge variant="brand">
+                        <Star className="size-3" aria-hidden />
+                        Default
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <p>
-                  {a.recipientName} · {a.phone}
-                </p>
-                <p>
-                  {a.line1}
-                  {a.line2 ? `, ${a.line2}` : ''}
-                </p>
-                <p>
-                  {a.city}
-                  {a.region ? `, ${a.region}` : ''}
-                  {a.postalCode ? ` ${a.postalCode}` : ''} · {a.countryCode}
-                </p>
-                {a.nearestLandmark && <p>Near {a.nearestLandmark}</p>}
-              </div>
-              <div className="mt-auto flex flex-wrap gap-2 pt-2">
-                {!a.isDefault && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={update.isPending}
-                    onClick={() => setDefault(a)}
-                  >
-                    <Star className="size-4" aria-hidden />
-                    Set default
+                <div className="text-sm text-muted-foreground">
+                  <p>
+                    {a.recipientName} · {a.phone}
+                  </p>
+                  <p>
+                    {a.line1}
+                    {a.line2 ? `, ${a.line2}` : ''}
+                  </p>
+                  <p>
+                    {a.city}
+                    {a.region ? `, ${a.region}` : ''}
+                    {a.postalCode ? ` ${a.postalCode}` : ''} · {a.countryCode}
+                  </p>
+                  {a.nearestLandmark && <p>Near {a.nearestLandmark}</p>}
+                </div>
+                <div className="mt-auto flex flex-wrap gap-2 pt-2">
+                  {!a.isDefault && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={update.isPending}
+                      onClick={() => setDefault(a)}
+                    >
+                      <Star className="size-4" aria-hidden />
+                      Set default
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                    <Pencil className="size-4" aria-hidden />
+                    Edit
                   </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
-                  <Pencil className="size-4" aria-hidden />
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    setDeleteError(null);
-                    setDeleteTarget(a);
-                  }}
-                >
-                  <Trash2 className="size-4" aria-hidden />
-                  Remove
-                </Button>
-              </div>
-            </Card>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setDeleteError(null);
+                      setDeleteTarget(a);
+                    }}
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                    Remove
+                  </Button>
+                </div>
+              </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       <AddressForm open={formOpen} onOpenChange={setFormOpen} address={editing} />

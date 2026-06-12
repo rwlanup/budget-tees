@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '../../common/decorators/public.decorator';
@@ -53,11 +63,14 @@ export class PaymentWebhookController {
   @Public()
   async esewa(@Query() query: Record<string, unknown>, @Res() res: Response) {
     const base = this.config.get<string>('payment.websiteUrl') ?? 'http://localhost:3000';
-    let url = `${base}/checkout/result?status=failed`;
+    const failedOrderParam = typeof query.order === 'string' ? `&order=${encodeURIComponent(query.order)}` : '';
+    let url = `${base}/checkout/result?status=failed${failedOrderParam}`;
     try {
       const result = await this.payments.handleCallback(query);
       const status = result.success ? 'success' : 'failed';
-      const orderParam = result.orderNumber ? `&order=${encodeURIComponent(result.orderNumber)}` : '';
+      const orderParam = result.orderNumber
+        ? `&order=${encodeURIComponent(result.orderNumber)}`
+        : '';
       url = `${base}/checkout/result?status=${status}${orderParam}`;
     } catch {
       // verification/lookup failed — fall through to the failed result page.
@@ -89,8 +102,11 @@ export class AdminPaymentController {
   }
 
   @Post('order/:orderId/mark-paid')
-  async markPaid(@Param('orderId', ParseUUIDPipe) orderId: string) {
-    await this.payments.markOrderPaid(orderId);
+  async markPaid(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @CurrentUser('id') adminId: string,
+  ) {
+    await this.payments.markOrderPaid(orderId, adminId);
     return { paid: true };
   }
 }

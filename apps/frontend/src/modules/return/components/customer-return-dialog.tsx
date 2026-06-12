@@ -76,8 +76,21 @@ export function CustomerReturnDialog({
 
   const setLine = (orderItemId: string, patch: Partial<LineState>) =>
     setLines((prev) => {
-      const base: LineState = prev[orderItemId] ?? { checked: false, quantity: 1, exchangeSkuId: null };
-      return { ...prev, [orderItemId]: { ...base, ...patch } };
+      const existing = prev[orderItemId];
+      const base: LineState = existing ?? { checked: false, quantity: 1, exchangeSkuId: null };
+      const next: LineState = { ...base, ...patch };
+      // Bail out when nothing actually changed — the exchange picker re-emits its
+      // value via an effect on every render, so without this a no-op patch would
+      // trigger an endless setState→re-render loop ("Maximum update depth exceeded").
+      if (
+        existing &&
+        existing.checked === next.checked &&
+        existing.quantity === next.quantity &&
+        existing.exchangeSkuId === next.exchangeSkuId
+      ) {
+        return prev;
+      }
+      return { ...prev, [orderItemId]: next };
     });
 
   const submit = () => {
@@ -89,11 +102,17 @@ export function CustomerReturnDialog({
         return {
           orderItemId: r.ri.orderItemId,
           quantity: ls.quantity,
-          exchangeSkuId: resolutionType === 'EXCHANGE' ? (ls.exchangeSkuId ?? undefined) : undefined,
+          exchangeSkuId:
+            resolutionType === 'EXCHANGE' ? (ls.exchangeSkuId ?? undefined) : undefined,
         };
       });
 
-    const parsed = createReturnSchema.safeParse({ resolutionType, reason, customerNote: note || undefined, items });
+    const parsed = createReturnSchema.safeParse({
+      resolutionType,
+      reason,
+      customerNote: note || undefined,
+      items,
+    });
     if (!parsed.success) {
       setFormError(parsed.error.issues[0]?.message ?? 'Please review the form.');
       return;

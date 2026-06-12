@@ -46,11 +46,7 @@ export function PriceTag({
           {formatCurrency(struck, currency)}
         </span>
       )}
-      {showBadge && onSale && discountPct > 0 && (
-        <Badge className="bg-success text-success-foreground hover:bg-success">
-          −{discountPct}%
-        </Badge>
-      )}
+      {showBadge && onSale && discountPct > 0 && <Badge variant="success">−{discountPct}%</Badge>}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ShoppingCart, Trash2, Loader2, TriangleAlert } from 'lucide-react';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ProductImage } from '@/components/storefront/product-image';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,8 +33,11 @@ export function CartDrawer() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-        <SheetHeader className="border-b">
-          <SheetTitle>Your cart {cart?.itemCount ? `(${cart.itemCount})` : ''}</SheetTitle>
+        <SheetHeader className="border-b px-6 py-4">
+          <SheetTitle className="flex items-center gap-2 font-heading text-lg">
+            <ShoppingCart className="size-5 text-brand" aria-hidden />
+            Your cart {cart?.itemCount ? `(${cart.itemCount})` : ''}
+          </SheetTitle>
         </SheetHeader>
 
         {isLoading ? (
@@ -43,15 +47,15 @@ export function CartDrawer() {
             ))}
           </div>
         ) : isEmpty ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-              <ShoppingCart className="size-6 text-muted-foreground" aria-hidden />
+          <div className="bg-aurora flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-brand-muted text-brand-strong dark:text-brand">
+              <ShoppingCart className="size-7" aria-hidden />
             </div>
             <div className="space-y-1">
-              <p className="font-medium">Your cart is empty</p>
+              <p className="font-heading text-lg font-bold">Your cart is empty</p>
               <p className="text-sm text-muted-foreground">Add items to get started.</p>
             </div>
-            <Button asChild onClick={() => setOpen(false)}>
+            <Button asChild variant="brand" onClick={() => setOpen(false)}>
               <Link href="/shop">Start shopping</Link>
             </Button>
           </div>
@@ -59,6 +63,18 @@ export function CartDrawer() {
           <ul className="flex-1 divide-y overflow-y-auto px-6">
             {items.map((line) => (
               <li key={line.itemId} className="flex items-start gap-3 py-4">
+                <Link
+                  href={`/product/${line.productId}`}
+                  className="shrink-0"
+                  aria-label={line.productName}
+                  onClick={() => setOpen(false)}
+                >
+                  <ProductImage
+                    src={line.imageUrl}
+                    alt={line.productName}
+                    className="size-14 rounded-md"
+                  />
+                </Link>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{line.productName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -103,10 +119,10 @@ export function CartDrawer() {
         )}
 
         {!isEmpty && !isLoading && (
-          <SheetFooter className="border-t">
-            <div className="mb-2 flex items-center justify-between">
+          <SheetFooter className="border-t px-6 py-4">
+            <div className="mb-1 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Subtotal</span>
-              <span className="text-base font-semibold tabular-nums">
+              <span className="font-heading text-xl font-bold tabular-nums">
                 {formatCurrency(cart?.subtotal ?? 0, currency)}
               </span>
             </div>
@@ -115,11 +131,17 @@ export function CartDrawer() {
             </p>
             <Separator className="mb-3" />
             {isStaff ? (
-              <p className="rounded-md bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
+              <p className="rounded-lg bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
                 Admin accounts can’t place orders.
               </p>
             ) : (
-              <Button asChild className="w-full" onClick={() => setOpen(false)}>
+              <Button
+                asChild
+                size="lg"
+                variant="brand"
+                className="w-full"
+                onClick={() => setOpen(false)}
+              >
                 <Link href="/checkout">Checkout</Link>
               </Button>
             )}

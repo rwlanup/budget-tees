@@ -97,4 +97,97 @@ export class SaleResolverService {
     }
     return Math.max(0, round2(base - sale.value));
   }
+
+  /**
+   * Build a SQL expression (+ bound params) that computes the effective sale
+   * price of a SKU in-database, mirroring `resolveForProduct` (active window,
+   * scope matching, lowest-price-wins, cap/floor/round-2). Intended for storefront
+   * ORDER BY so price sorting reflects active sales without loading every SKU.
+   *
+   * `cols` are raw SQL column refs into the caller's query: the SKU base price,
+   * the product id, and the product's category id. Returns `null` when no sales
+   * are active so the caller can fall back to the plain base-price column.
+   */
+  async buildPriceSortExpression(cols: {
+    basePrice: string;
+    productId: string;
+    categoryId: string;
+  }): Promise<{ sql: string; params: Record<string, unknown> } | null> {
+    const active = await this.sales.activeSales();
+    if (!active.length) return null;
+
+    const saleIds = active.map((s) => s.id);
+    const [productLinks, excludedLinks, categoryLinks] = await Promise.all([
+      this.spRepo.find({ where: { saleId: In(saleIds) } }),
+      this.sxRepo.find({ where: { saleId: In(saleIds) } }),
+      this.scRepo.find({ where: { saleId: In(saleIds) } }),
+    ]);
+
+    const group = <T>(rows: T[], key: (r: T) => string, val: (r: T) => string) => {
+      const m = new Map<string, string[]>();
+      for (const r of rows) (m.get(key(r)) ?? m.set(key(r), []).get(key(r))!).push(val(r));
+      return m;
+    };
+    const productsBySale = group(productLinks, (l) => l.saleId, (l) => l.productId);
+    const excludedBySale = group(excludedLinks, (l) => l.saleId, (l) => l.productId);
+    const catsBySale = group(categoryLinks, (l) => l.saleId, (l) => l.categoryId);
+
+    // CATEGORIES scope: a product matches when its own category is the sale's
+    // category or any descendant of it. Expanding each sale category to
+    // self + descendants is equivalent to the resolver's lineage(self+ancestors)
+    // ∩ sale_categories, but lets us match on the product's single categoryId.
+    const coveredBySale = new Map<string, string[]>();
+    for (const sale of active) {
+      if (sale.scope !== SaleScope.CATEGORIES) continue;
+      const baseCats = catsBySale.get(sale.id) ?? [];
+      if (!baseCats.length) continue;
+      const covered = new Set<string>(baseCats);
+      for (const cid of baseCats) {
+        for (const d of await this.categories.descendantIds(cid)) covered.add(d);
+      }
+      coveredBySale.set(sale.id, [...covered]);
+    }
+
+    const params: Record<string, unknown> = {};
+    const cases: string[] = [];
+    active.forEach((sale, i) => {
+      const p = `sps${i}`;
+      let match: string;
+      if (sale.scope === SaleScope.STORE_WIDE) {
+        params[`${p}excl`] = excludedBySale.get(sale.id) ?? [];
+        match = `${cols.productId} <> ALL(:${p}excl::uuid[])`;
+      } else if (sale.scope === SaleScope.PRODUCTS) {
+        const prods = productsBySale.get(sale.id) ?? [];
+        if (!prods.length) return; // scoped to products but none linked → matches nothing
+        params[`${p}prod`] = prods;
+        match = `${cols.productId} = ANY(:${p}prod::uuid[])`;
+      } else {
+        const covered = coveredBySale.get(sale.id) ?? [];
+        if (!covered.length) return;
+        params[`${p}cats`] = covered;
+        params[`${p}excl`] = excludedBySale.get(sale.id) ?? [];
+        match = `${cols.categoryId} = ANY(:${p}cats::uuid[]) AND ${cols.productId} <> ALL(:${p}excl::uuid[])`;
+      }
+
+      params[`${p}val`] = sale.value;
+      let price: string;
+      if (sale.type === SaleType.PERCENTAGE) {
+        if (sale.maxDiscountAmount != null) {
+          params[`${p}max`] = sale.maxDiscountAmount;
+          price = `GREATEST(0, ROUND(${cols.basePrice} - LEAST(${cols.basePrice} * :${p}val / 100, :${p}max), 2))`;
+        } else {
+          price = `GREATEST(0, ROUND(${cols.basePrice} - ${cols.basePrice} * :${p}val / 100, 2))`;
+        }
+      } else {
+        price = `GREATEST(0, ROUND(${cols.basePrice} - :${p}val, 2))`;
+      }
+
+      cases.push(`CASE WHEN (${match}) THEN ${price} END`);
+    });
+
+    if (!cases.length) return null;
+    // LEAST ignores the NULLs produced by non-matching CASEs; base price guarantees
+    // a non-null floor, so a SKU with no matching sale sorts by its own price.
+    return { sql: `LEAST(${cols.basePrice}, ${cases.join(', ')})`, params };
+  }
 }

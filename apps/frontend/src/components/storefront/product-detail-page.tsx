@@ -18,13 +18,14 @@ function ProductInner({ slug }: { slug: string }) {
 
   if (isLoading) {
     return (
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Skeleton className="aspect-square w-full rounded-lg" />
+      <div className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+        <Skeleton className="aspect-square w-full rounded-2xl" />
         <div className="space-y-4">
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-6 w-1/3" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-9 w-2/3" />
+          <Skeleton className="h-7 w-1/3" />
           <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-11 w-48" />
+          <Skeleton className="h-12 w-56" />
         </div>
       </div>
     );

@@ -7,7 +7,10 @@ export const metadata = { title: 'Reviews · Admin', description: 'Moderate prod
 export default function ReviewsPage() {
   return (
     <div>
-      <PageHeader title="Reviews" description="Moderate product reviews — publish, hide, or remove." />
+      <PageHeader
+        title="Reviews"
+        description="Moderate product reviews — publish, hide, or remove."
+      />
       <Suspense>
         <AdminReviewsTable />
       </Suspense>

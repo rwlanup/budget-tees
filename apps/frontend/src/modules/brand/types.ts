@@ -1,3 +1,5 @@
+import type { Media } from '../media/types';
+
 /** Mirrors backend Brand entity. */
 export interface Brand {
   id: string;
@@ -5,6 +7,8 @@ export interface Brand {
   slug: string;
   description: string | null;
   logoMediaId: string | null;
+  /** Resolved logo media for `logoMediaId`, eager-loaded on reads (null when unset). */
+  logo?: Media | null;
   websiteUrl: string | null;
   isActive: boolean;
   metaTitle: string | null;

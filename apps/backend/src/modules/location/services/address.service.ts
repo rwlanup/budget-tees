@@ -78,7 +78,11 @@ export class AddressService {
 
   private async clearDefault(userId: string, type: UserAddress['type']): Promise<void> {
     await this.repo.update(
-      { userId, type: type === 'BOTH' ? In(['SHIPPING', 'BILLING']) : In([type, 'BOTH']), isDefault: true },
+      {
+        userId,
+        type: type === 'BOTH' ? In(['SHIPPING', 'BILLING']) : In([type, 'BOTH']),
+        isDefault: true,
+      },
       { isDefault: false },
     );
   }

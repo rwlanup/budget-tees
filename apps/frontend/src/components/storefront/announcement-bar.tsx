@@ -14,8 +14,12 @@ export function AnnouncementBar({ message }: { message?: string }) {
   if (!message || dismissed) return null;
 
   return (
-    <div className="relative bg-primary text-primary-foreground">
-      <div className="mx-auto flex max-w-7xl items-center justify-center px-10 py-2 text-center text-xs font-medium sm:text-sm">
+    <div className="bg-brand-gradient relative text-brand-foreground">
+      <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-10 py-2 text-center text-xs font-semibold tracking-wide sm:text-sm">
+        <span
+          className="inline-block size-1.5 animate-pulse rounded-full bg-brand-foreground/70"
+          aria-hidden
+        />
         {message}
       </div>
       <button
@@ -25,7 +29,7 @@ export function AnnouncementBar({ message }: { message?: string }) {
           sessionStorage.setItem('bt-announce-dismissed', '1');
           setDismissed(true);
         }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 opacity-80 hover:opacity-100"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 opacity-80 transition-opacity hover:opacity-100"
       >
         <X className="size-4" aria-hidden />
       </button>

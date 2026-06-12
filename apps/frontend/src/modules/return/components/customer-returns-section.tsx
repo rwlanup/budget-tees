@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { toast } from 'sonner';
-import { Undo2 } from 'lucide-react';
+import { Undo2, ArrowLeftRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -14,12 +14,18 @@ import { useCancelReturn, useMyReturns } from '../queries';
 import {
   CANCELLABLE_RETURN_STATUSES,
   RETURNABLE_ORDER_STATUSES,
+  RETURN_REASONS,
+  type ReturnReason,
   type ReturnRequest,
 } from '../types';
 import { ReturnStatusBadge } from './return-status-badge';
 import { CustomerReturnDialog } from './customer-return-dialog';
 
 const RETURNABLE = new Set<string>(RETURNABLE_ORDER_STATUSES);
+const REASON_LABELS = Object.fromEntries(RETURN_REASONS.map((r) => [r.value, r.label])) as Record<
+  ReturnReason,
+  string
+>;
 
 export function CustomerReturnsSection({ order }: { order: Order }) {
   const { currency } = useStoreConfig();
@@ -67,34 +73,77 @@ export function CustomerReturnsSection({ order }: { order: Order }) {
         </p>
       ) : (
         <ul className="divide-y">
-          {returns.map((r) => (
-            <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
-              <span className="font-mono text-sm font-medium">{r.returnNumber}</span>
-              <ReturnStatusBadge status={r.status} />
-              <span className="text-xs text-muted-foreground">{r.resolutionType}</span>
-              {r.refundAmount != null && (
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  Refund {formatCurrency(r.refundAmount, currency)}
+          {returns.map((r) => {
+            const exchangeItems =
+              r.resolutionType === 'EXCHANGE'
+                ? (r.items ?? []).filter((i) => i.exchangeSku)
+                : [];
+            return (
+              <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                <span className="font-mono text-sm font-medium">{r.returnNumber}</span>
+                <ReturnStatusBadge status={r.status} />
+                <span className="text-xs text-muted-foreground">{r.resolutionType}</span>
+                <span className="text-xs text-muted-foreground">
+                  {REASON_LABELS[r.reason] ?? r.reason}
                 </span>
-              )}
-              <span className="ml-auto text-xs text-muted-foreground">
-                {formatDate(r.createdAt)}
-              </span>
-              {CANCELLABLE_RETURN_STATUSES.includes(r.status) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    setCancelError(null);
-                    setCancelTarget(r);
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </li>
-          ))}
+                {r.refundAmount != null && (
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    Refund {formatCurrency(r.refundAmount, currency)}
+                  </span>
+                )}
+                {r.resolutionType === 'EXCHANGE' &&
+                  r.priceDifference != null &&
+                  r.priceDifference !== 0 && (
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      Price diff. {formatCurrency(r.priceDifference, currency)}
+                    </span>
+                  )}
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {formatDate(r.createdAt)}
+                </span>
+                {CANCELLABLE_RETURN_STATUSES.includes(r.status) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setCancelError(null);
+                      setCancelTarget(r);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+
+                {exchangeItems.length > 0 && (
+                  <ul className="w-full space-y-1 pl-0.5">
+                    {exchangeItems.map((i) => {
+                      const ex = i.exchangeSku!;
+                      const variant =
+                        ex.variant && Object.keys(ex.variant).length
+                          ? Object.values(ex.variant).join(' / ')
+                          : '';
+                      return (
+                        <li key={i.id} className="flex items-center gap-1.5 text-sm font-medium">
+                          <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
+                          <span>
+                            Exchange for {ex.productName}
+                            {variant ? ` · ${variant}` : ''}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {r.adminNote && (
+                  <p className="w-full text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Store note:</span> {r.adminNote}
+                  </p>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 

@@ -12,10 +12,12 @@ function axisOfValue(detail: StorefrontProductDetail, valueId: string): string |
 }
 
 /** Pre-select the order item's current SKU so the customer changes from a known starting point. */
-function seedSelection(detail: StorefrontProductDetail, currentSkuId: string): Record<string, string> {
+function seedSelection(
+  detail: StorefrontProductDetail,
+  currentSkuId: string,
+): Record<string, string> {
   if (!detail.axes.length) return {};
-  const target =
-    detail.variants.find((v) => v.skuId === currentSkuId) ?? detail.variants[0];
+  const target = detail.variants.find((v) => v.skuId === currentSkuId) ?? detail.variants[0];
   if (!target) return {};
   const sel: Record<string, string> = {};
   for (const valueId of target.attributeValueIds) {
@@ -95,7 +97,9 @@ export function ExchangeVariantPicker({
         <p className="text-xs text-destructive">That variant is out of stock.</p>
       )}
       {!fullySelected && axes.length > 0 && (
-        <p className="text-xs text-muted-foreground">Select every option to choose a replacement.</p>
+        <p className="text-xs text-muted-foreground">
+          Select every option to choose a replacement.
+        </p>
       )}
     </div>
   );

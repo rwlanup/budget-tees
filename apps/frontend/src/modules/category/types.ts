@@ -1,3 +1,5 @@
+import type { Media } from '../media/types';
+
 /** Mirrors backend Category entity. `children` present in the tree response. */
 export interface Category {
   id: string;
@@ -6,6 +8,8 @@ export interface Category {
   description: string | null;
   parentId: string | null;
   imageMediaId: string | null;
+  /** Resolved media for `imageMediaId`, loaded on reads (null when unset/missing). */
+  image?: Media | null;
   sortOrder: number;
   isActive: boolean;
   metaTitle: string | null;

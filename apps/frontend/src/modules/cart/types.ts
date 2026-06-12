@@ -12,6 +12,8 @@ export interface PricedCartLine {
   available: number;
   inStock: boolean;
   unavailable: boolean;
+  /** SKU image when set, else the product's primary image. */
+  imageUrl: string | null;
 }
 
 export interface PricedCart {

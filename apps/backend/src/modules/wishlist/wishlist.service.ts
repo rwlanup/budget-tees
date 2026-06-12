@@ -80,6 +80,14 @@ export class WishlistService {
     return { wishlisted: !!existing };
   }
 
+  /**
+   * Saved-row count for the header badge. Raw count (cheap, single query); may
+   * include rows whose product is now unpublished — `list` filters those out.
+   */
+  async count(userId: string): Promise<{ count: number }> {
+    return { count: await this.repo.count({ where: { userId } }) };
+  }
+
   async moveToCart(userId: string, skuId: string, quantity: number, removeFromWishlist = true) {
     const result = await this.cart.addItem({ userId }, { skuId, quantity });
     if (removeFromWishlist) await this.repo.delete({ userId, skuId });

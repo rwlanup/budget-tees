@@ -24,9 +24,11 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
   const isEmpty = !isLoading && !isError && variants.length === 0;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[16rem_1fr] lg:gap-8">
       <aside className="hidden lg:block">
-        <CatalogFilters ctl={ctl} />
+        <div className="sticky top-32">
+          <CatalogFilters ctl={ctl} />
+        </div>
       </aside>
 
       <div>
@@ -34,7 +36,7 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
         <ActiveFilters ctl={ctl} />
 
         {isError ? (
-          <Alert variant="destructive" role="alert">
+          <Alert variant="destructive" role="alert" className="rounded-xl">
             <AlertCircle className="size-4" aria-hidden />
             <AlertTitle>Couldn’t load products</AlertTitle>
             <AlertDescription className="flex flex-col items-start gap-3">
@@ -47,6 +49,7 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
           </Alert>
         ) : isEmpty ? (
           <EmptyState
+            className="bg-aurora py-16"
             icon={PackageOpen}
             title="No products found"
             description={
@@ -54,7 +57,7 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
             }
             action={
               ctl.hasFilters ? (
-                <Button variant="outline" onClick={ctl.reset}>
+                <Button variant="brand" onClick={ctl.reset}>
                   Clear filters
                 </Button>
               ) : undefined
@@ -64,7 +67,7 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
           <>
             <VariantGrid variants={variants} isLoading={isLoading} skeletonCount={ctl.pageSize} />
             {totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-center gap-4">
+              <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Pagination">
                 <Button
                   variant="outline"
                   size="sm"
@@ -74,7 +77,7 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
                   <ChevronLeft className="size-4" aria-hidden />
                   Previous
                 </Button>
-                <span className="text-sm text-muted-foreground tabular-nums">
+                <span className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-foreground tabular-nums">
                   Page {page} of {totalPages}
                 </span>
                 <Button
@@ -86,7 +89,7 @@ export function CatalogView({ base = {} }: { base?: Partial<VariantListParams> }
                   Next
                   <ChevronRight className="size-4" aria-hidden />
                 </Button>
-              </div>
+              </nav>
             )}
           </>
         )}

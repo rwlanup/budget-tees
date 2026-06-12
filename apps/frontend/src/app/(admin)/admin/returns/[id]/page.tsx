@@ -9,7 +9,10 @@ import {
 } from '@/components/ui/breadcrumb';
 import { ReturnDetail } from '@/modules/return/components/return-detail';
 
-export const metadata = { title: 'Return details · Admin', description: 'Review a return request.' };
+export const metadata = {
+  title: 'Return details · Admin',
+  description: 'Review a return request.',
+};
 
 export default async function ReturnDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

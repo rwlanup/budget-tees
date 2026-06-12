@@ -31,10 +31,7 @@ function ResultInner() {
   const { data: order, isLoading } = useCustomerOrder(orderNumber, statusParam !== 'failed');
 
   // Actively reconcile eSewa status (server-side check) while the payment is settling.
-  useReconcileEsewa(
-    orderNumber,
-    statusParam !== 'failed' && order?.paymentMethod !== 'COD' && order?.paymentStatus !== 'PAID',
-  );
+  useReconcileEsewa(orderNumber, order?.paymentMethod !== 'COD' && order?.paymentStatus !== 'PAID');
 
   if (!orderNumber) {
     return (
@@ -78,7 +75,7 @@ function ResultInner() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {failed
-            ? 'Your payment didn’t go through. Your cart is still saved — you can try again.'
+            ? 'Your payment didn’t go through. Your order has been placed — you can try again for payment.'
             : pendingOnline
               ? 'We’re verifying your payment. This page updates automatically.'
               : isCod
@@ -86,10 +83,10 @@ function ResultInner() {
                 : 'Thank you! Your payment was received.'}
         </p>
         {order && (
-          <p className="mt-3 text-sm">
+          <Link href={`/account/orders/${order.id}`} className="mt-3 text-sm">
             Order <span className="font-mono font-medium">{order.orderNumber}</span>
             {pendingOnline && <Loader2 className="ml-2 inline size-4 animate-spin" aria-hidden />}
-          </p>
+          </Link>
         )}
       </Card>
 
@@ -124,7 +121,11 @@ function ResultInner() {
 
       <div className="flex justify-center gap-3">
         <Button asChild variant="outline">
-          <Link href="/account/orders">My orders</Link>
+          {order ? (
+            <Link href={`/account/orders/${order.id}`}>View order</Link>
+          ) : (
+            <Link href="/account/orders">My orders</Link>
+          )}
         </Button>
         <Button asChild>
           <Link href="/shop">Continue shopping</Link>

@@ -353,17 +353,17 @@ export function AddressForm({ open, onOpenChange, address }: Props) {
               control={form.control}
               name="isDefault"
               render={({ field }) => (
-                <FormItem className="flex items-center gap-3 space-y-0">
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <FormLabel className="!mt-0">
+                <FormItem className="flex items-center justify-between gap-3 space-y-0 rounded-lg border bg-elevated px-4 py-3">
+                  <FormLabel className="!mt-0 font-normal">
                     Set as default{' '}
                     {{ SHIPPING: 'shipping', BILLING: 'billing', BOTH: 'shipping & billing' }[
                       form.watch('type')
                     ] ?? 'shipping'}{' '}
                     address
                   </FormLabel>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
                 </FormItem>
               )}
             />

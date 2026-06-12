@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowLeftRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -107,9 +108,24 @@ export function ReturnDetail({ id }: { id: string }) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {request.items.map((it) => (
+                      {request.items.map((it) => {
+                        const ex = it.exchangeSku;
+                        const exVariant =
+                          ex?.variant && Object.keys(ex.variant).length
+                            ? Object.values(ex.variant).join(' / ')
+                            : '';
+                        return (
                         <TableRow key={it.id}>
-                          <TableCell className="font-medium">{itemName(it.orderItemId)}</TableCell>
+                          <TableCell className="font-medium">
+                            {itemName(it.orderItemId)}
+                            {request.resolutionType === 'EXCHANGE' && ex && (
+                              <span className="mt-1 flex items-center gap-1">
+                                <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
+                                {ex.productName}
+                                {exVariant ? ` · ${exVariant}` : ''}
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right tabular-nums">{it.quantity}</TableCell>
                           <TableCell className="hidden sm:table-cell">
                             {it.conditionOnReceipt ? titleCase(it.conditionOnReceipt) : '—'}
@@ -123,7 +139,8 @@ export function ReturnDetail({ id }: { id: string }) {
                               : '—'}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>

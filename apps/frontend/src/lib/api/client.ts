@@ -143,7 +143,9 @@ export async function apiDownload(path: string, filename: string, _retry = false
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     const data = text ? (JSON.parse(text) as ApiErrorBody) : undefined;
-    throw new ApiError(data ?? { statusCode: res.status, code: 'ERROR', message: 'Download failed' });
+    throw new ApiError(
+      data ?? { statusCode: res.status, code: 'ERROR', message: 'Download failed' },
+    );
   }
 
   const blob = await res.blob();

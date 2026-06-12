@@ -126,9 +126,10 @@ export function ProductsTable() {
           />
         </div>
         <CategorySelect
-          value={categoryId ?? undefined}
+          value={categoryId ?? ALL}
           onChange={(v) => setParams({ categoryId: v, page: 1 })}
           placeholder="All categories"
+          showAll
         />
         <Select value={brandId ?? ALL} onValueChange={(v) => setParams({ brandId: v, page: 1 })}>
           <SelectTrigger aria-label="Filter by brand">

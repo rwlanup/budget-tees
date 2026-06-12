@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { PaginatedResult, paginate } from '../../common/dto/pagination.dto';
 import { Sku } from '../sku/entities/sku.entity';
 import { SkuAttributeValue } from '../sku/entities/sku-attribute-value.entity';
@@ -113,7 +113,21 @@ export class StorefrontService {
       qb.andWhere('p."categoryId" IN (:...cids)', { cids: ids });
     }
     if (q.brandId) qb.andWhere('p."brandId" = :bid', { bid: q.brandId });
-    if (q.search) qb.andWhere('p."name" ILIKE :q', { q: `%${q.search}%` });
+    if (q.search) {
+      // Match the term against product name, brand, category, or any product tag (OR).
+      qb.leftJoin('p.brand', 'b').leftJoin('p.category', 'cat');
+      qb.andWhere(
+        new Brackets((w) => {
+          w.where('p."name" ILIKE :q')
+            .orWhere('b."name" ILIKE :q')
+            .orWhere('cat."name" ILIKE :q')
+            .orWhere(
+              'EXISTS (SELECT 1 FROM product_tags pt JOIN tags t ON t."id" = pt."tagId" WHERE pt."productId" = p."id" AND t."name" ILIKE :q)',
+            );
+        }),
+        { q: `%${q.search}%` },
+      );
+    }
     if (q.tagIds?.length) {
       qb.andWhere(
         'EXISTS (SELECT 1 FROM product_tags pt WHERE pt."productId" = p."id" AND pt."tagId" IN (:...tids))',
@@ -130,13 +144,31 @@ export class StorefrontService {
     if (q.priceMax != null) qb.andWhere('s."price" <= :pmax', { pmax: q.priceMax });
     if (q.inStock) qb.andWhere('(s."stock" - s."reserved") > 0');
 
+    // For price sorts, order by the effective (sale-aware) price computed in SQL
+    // so sorting reflects active store/category/product sales — not the raw SKU
+    // price. Pagination stays at the DB level (no loading all SKUs). Falls back
+    // to the base price column when no sales are active.
+    const priceExpr =
+      q.sort === 'price_asc' || q.sort === 'price_desc'
+        ? await this.sales.buildPriceSortExpression({
+            basePrice: 's."price"',
+            productId: 'p."id"',
+            categoryId: 'p."categoryId"',
+          })
+        : null;
+
     switch (q.sort) {
       case 'price_asc':
-        qb.orderBy('s.price', 'ASC');
+      case 'price_desc': {
+        const dir = q.sort === 'price_asc' ? 'ASC' : 'DESC';
+        if (priceExpr) {
+          qb.addSelect(priceExpr.sql, 'effective_price').setParameters(priceExpr.params);
+          qb.orderBy('effective_price', dir);
+        } else {
+          qb.orderBy('s.price', dir);
+        }
         break;
-      case 'price_desc':
-        qb.orderBy('s.price', 'DESC');
-        break;
+      }
       case 'name':
         qb.orderBy('s.name', 'ASC');
         break;

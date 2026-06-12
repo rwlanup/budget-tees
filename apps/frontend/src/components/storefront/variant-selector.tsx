@@ -40,10 +40,10 @@ export function VariantSelector({ axes, variants, selected, onSelect }: Props) {
     <div className="space-y-4">
       {axes.map((axis) => (
         <div key={axis.attributeId} className="space-y-2">
-          <p className="text-sm font-medium">
-            {axis.name}
+          <p className="text-sm font-semibold">
+            <span className="text-muted-foreground">{axis.name}:</span>
             {selected[axis.attributeId] && (
-              <span className="ml-1 font-normal text-muted-foreground">
+              <span className="ml-1.5 text-foreground">
                 {axis.values.find((v) => v.id === selected[axis.attributeId])?.value}
               </span>
             )}
@@ -65,10 +65,10 @@ export function VariantSelector({ axes, variants, selected, onSelect }: Props) {
                   onClick={() => onSelect(axis.attributeId, val.id)}
                   aria-pressed={isSelected}
                   className={cn(
-                    'inline-flex min-h-9 items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors',
+                    'press inline-flex min-h-10 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all',
                     isSelected
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'hover:bg-accent',
+                      ? 'border-foreground bg-foreground text-background shadow-sm'
+                      : 'hover:border-foreground/30 hover:bg-accent',
                     !available && 'cursor-not-allowed opacity-40',
                     available && !inStock && !isSelected && 'text-muted-foreground',
                   )}

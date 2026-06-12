@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api/client';
 import type { PricedCart } from '@/modules/cart/types';
-import type { WishlistItem, WishlistState } from './types';
+import type { WishlistCount, WishlistItem, WishlistState } from './types';
 
 export interface MoveToCartBody {
   quantity: number;
@@ -9,6 +9,8 @@ export interface MoveToCartBody {
 
 export const wishlistApi = {
   list: () => apiFetch<WishlistItem[]>('/wishlist'),
+
+  count: () => apiFetch<WishlistCount>('/wishlist/count'),
 
   add: (skuId: string) =>
     apiFetch<WishlistState>('/wishlist/items', { method: 'POST', body: { skuId } }),

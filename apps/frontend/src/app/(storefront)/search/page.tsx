@@ -24,10 +24,10 @@ function SearchInner() {
 
   return (
     <StorefrontContainer className="py-8">
-      <form onSubmit={submit} role="search" className="mb-6 max-w-xl">
+      <form onSubmit={submit} role="search" className="mx-auto mb-8 max-w-2xl">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden
           />
           <Input
@@ -36,7 +36,7 @@ function SearchInner() {
             onChange={(e) => setValue(e.target.value)}
             placeholder="Search products…"
             aria-label="Search products"
-            className="pl-9"
+            className="h-12 rounded-xl pl-12 text-base shadow-xs"
             autoFocus
           />
         </div>
@@ -44,11 +44,14 @@ function SearchInner() {
 
       {q ? (
         <>
-          <h1 className="mb-6 font-heading text-xl font-semibold">Results for “{q}”</h1>
+          <h1 className="mb-6 text-2xl font-bold sm:text-3xl">
+            Results for <span className="text-gradient">“{q}”</span>
+          </h1>
           <CatalogView base={{ search: q }} />
         </>
       ) : (
         <EmptyState
+          className="bg-aurora py-16"
           icon={Search}
           title="Search the store"
           description="Type a product name to begin."

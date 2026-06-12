@@ -1,9 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Sku } from '../entities/sku.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
+import { emitNotification } from '../../notification/notification-event';
+import { NotificationActorType, NotificationType } from '../../notification/enums/notification.enums';
 
 export interface MovementRef {
   refType?: string;
@@ -22,6 +25,7 @@ export class InventoryService {
   constructor(
     @InjectRepository(Sku) private readonly skuRepo: Repository<Sku>,
     private readonly dataSource: DataSource,
+    private readonly events: EventEmitter2,
   ) {}
 
   reserve(skuId: string, qty: number, ref: MovementRef = {}, mgr?: EntityManager) {
@@ -72,9 +76,12 @@ export class InventoryService {
     });
   }
 
-  adjust(skuId: string, opts: { delta?: number; setTo?: number; reason: string; by?: string }) {
-    return this.run(undefined, async (m) => {
+  async adjust(skuId: string, opts: { delta?: number; setTo?: number; reason: string; by?: string }) {
+    let lowStock: { id: string; productId: string; productName: string; code: string; available: number } | null =
+      null;
+    const sku = await this.run(undefined, async (m) => {
       const sku = await this.lock(m, skuId);
+      const prevAvailable = sku.stock - sku.reserved;
       const newStock = opts.setTo !== undefined ? opts.setTo : sku.stock + (opts.delta ?? 0);
       if (newStock < 0) throw new ConflictException('Resulting stock cannot be negative');
       const change = newStock - sku.stock;
@@ -84,8 +91,29 @@ export class InventoryService {
         reason: opts.reason,
         createdBy: opts.by,
       });
+      const newAvailable = sku.stock - sku.reserved;
+      // Only when stock *crosses* into low — not on every adjust of an already-low SKU.
+      if (sku.isActive && newAvailable <= sku.lowStockThreshold && prevAvailable > sku.lowStockThreshold) {
+        lowStock = {
+          id: sku.id,
+          productId: sku.productId,
+          productName: sku.name ?? sku.sku,
+          code: sku.sku,
+          available: newAvailable,
+        };
+      }
       return sku;
     });
+    // Emit after commit so a rolled-back adjust never raises a false alert.
+    if (lowStock) {
+      emitNotification(this.events, {
+        type: NotificationType.LOW_STOCK,
+        actorId: opts.by ?? null,
+        actorType: opts.by ? NotificationActorType.ADMIN : NotificationActorType.SYSTEM,
+        sku: lowStock,
+      });
+    }
+    return sku;
   }
 
   private async lock(m: EntityManager, skuId: string): Promise<Sku> {

@@ -1,11 +1,4 @@
-import {
-  IsEmail,
-  IsEnum,
-  IsOptional,
-  IsString,
-  Length,
-  Matches,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 import { ContactStatus, ContactTopic } from '../enums/contact.enums';
 

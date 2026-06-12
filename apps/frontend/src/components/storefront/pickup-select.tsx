@@ -16,7 +16,7 @@ export function PickupSelect({
 }) {
   const { data: loc, isLoading } = usePickupLocations();
 
-  if (isLoading) return <Skeleton className="h-24 w-full" />;
+  if (isLoading) return <Skeleton className="shimmer h-28 w-full rounded-xl" />;
   if (!loc) {
     return (
       <EmptyState
@@ -27,19 +27,32 @@ export function PickupSelect({
     );
   }
 
+  const active = selectedId === loc.id;
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <button
         key={loc.id}
         type="button"
         onClick={() => onSelect(loc.id)}
+        aria-pressed={active}
         className={cn(
-          'relative rounded-lg border p-3 text-left text-sm border-primary ring-1 ring-primary',
+          'press relative rounded-xl border p-4 text-left text-sm transition-colors',
+          active
+            ? 'border-brand bg-brand-muted/40 ring-2 ring-brand/30'
+            : 'border-border hover:border-foreground/20 hover:bg-accent',
         )}
       >
-        <Check className="absolute right-2 top-2 size-4 text-primary" aria-hidden />
-        <p className="font-medium">{loc.name}</p>
-        <p className="text-muted-foreground">
+        {active && (
+          <span className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-full bg-brand text-brand-foreground">
+            <Check className="size-3" aria-hidden />
+          </span>
+        )}
+        <p className="flex items-center gap-1.5 pr-6 font-semibold">
+          <MapPin className="size-4 text-brand" aria-hidden />
+          {loc.name}
+        </p>
+        <p className="mt-1 text-muted-foreground">
           {loc.line1}, {loc.city}
           {loc.region ? `, ${loc.region}` : ''}
         </p>

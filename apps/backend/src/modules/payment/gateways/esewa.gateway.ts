@@ -77,7 +77,7 @@ export class EsewaGateway implements PaymentGateway {
           product_service_charge: '0',
           product_delivery_charge: '0',
           success_url: `${baseReturn}/esewa/callback`,
-          failure_url: `${baseReturn}/esewa/callback?status=failure`,
+          failure_url: `${baseReturn}/esewa/callback?status=failure&order=${encodeURIComponent(order.orderNumber)}`,
           signed_field_names: 'total_amount,transaction_uuid,product_code',
           signature,
         },
