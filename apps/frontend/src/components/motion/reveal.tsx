@@ -1,7 +1,7 @@
 'use client';
 
-import { type ReactNode } from 'react';
-import { motion, useReducedMotion, type Variants } from 'motion/react';
+import { useRef, type ReactNode } from 'react';
+import { motion, useInView, useReducedMotion, type Variants } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 type RevealProps = {
@@ -30,7 +30,9 @@ export function Reveal({
   as = 'div',
 }: RevealProps) {
   const reduce = useReducedMotion();
-  const MotionTag = motion[as];
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once, amount: 0.2, margin: '0px 0px -10% 0px' });
+  const MotionTag = motion[as] as typeof motion.div;
 
   if (reduce) {
     const Tag = as;
@@ -39,10 +41,10 @@ export function Reveal({
 
   return (
     <MotionTag
+      ref={ref}
       className={cn(className)}
       initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once, amount: 0.2, margin: '0px 0px -10% 0px' }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay }}
     >
       {children}
@@ -66,14 +68,16 @@ const staggerChild: Variants = {
  */
 export function Stagger({ children, className }: { children: ReactNode; className?: string }) {
   const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.1 });
   if (reduce) return <div className={className}>{children}</div>;
   return (
     <motion.div
+      ref={ref}
       className={className}
       variants={staggerParent}
       initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.1 }}
+      animate={inView ? 'show' : 'hidden'}
     >
       {children}
     </motion.div>

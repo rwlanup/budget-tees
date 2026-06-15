@@ -1,5 +1,14 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { OrderStatus } from '../enums/order.enums';
+import { Order } from './order.entity';
 
 @Entity('order_status_history')
 export class OrderStatusHistory {
@@ -9,6 +18,10 @@ export class OrderStatusHistory {
   @Index()
   @Column({ type: 'uuid' })
   orderId: string;
+
+  @ManyToOne(() => Order, (o) => o.statusHistory, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'orderId' })
+  order: Order;
 
   @Column({ type: 'enum', enum: OrderStatus })
   status: OrderStatus;

@@ -19,13 +19,24 @@ export class WishlistService {
 
   async list(userId: string) {
     const rows = await this.repo.find({ where: { userId }, order: { addedAt: 'DESC' } });
+
+    // Batch the per-row product, sku and sale lookups (was ~N queries/row).
+    const products = await this.products.findPublishedByIds(rows.map((r) => r.productId));
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    const skuMap = new Map(
+      (await this.skus.findByIds(rows.map((r) => r.skuId))).map((s) => [s.id, s]),
+    );
+    const pricer = await this.sales.buildPricer(
+      products.map((p) => ({ id: p.id, categoryId: p.categoryId })),
+    );
+
     const items: Array<Record<string, unknown>> = [];
     for (const row of rows) {
-      const product = await this.products.findOneByIdOrSlug(row.productId, true).catch(() => null);
+      const product = productMap.get(row.productId);
       if (!product) continue; // unpublished/deleted — skip
-      const sku = await this.skus.findOne(row.skuId).catch(() => null);
+      const sku = skuMap.get(row.skuId);
       if (!sku) continue; // sku deleted — skip
-      const resolved = await this.sales.resolveForProduct(product.id, sku.price);
+      const resolved = pricer.price(product.id, sku.price);
       items.push({
         skuId: sku.id,
         productId: product.id,

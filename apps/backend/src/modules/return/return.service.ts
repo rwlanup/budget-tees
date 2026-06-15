@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, Repository } from 'typeorm';
 import { emitEmail } from '../../common/utils/emit-email';
+import { isUuid } from '../../common/utils/uuid';
 import { emitNotification } from '../notification/notification-event';
 import { NotificationActorType, NotificationType } from '../notification/enums/notification.enums';
 import { ReturnRequest } from './entities/return-request.entity';
@@ -92,10 +93,11 @@ export class ReturnService {
     const items: Partial<ReturnItem>[] = [];
     let refundTotal = 0;
     let priceDifference = 0;
+    const returnedMap = await this.alreadyReturnedMany(dto.items.map((i) => i.orderItemId));
     for (const input of dto.items) {
       const orderItem = order.items.find((i) => i.id === input.orderItemId);
       if (!orderItem) throw new UnprocessableEntityException('Order item not found in this order');
-      const returnable = orderItem.quantity - (await this.alreadyReturned(input.orderItemId));
+      const returnable = orderItem.quantity - (returnedMap.get(input.orderItemId) ?? 0);
       if (input.quantity > returnable) {
         throw new UnprocessableEntityException(
           `Only ${returnable} of ${orderItem.productName} can be returned`,
@@ -297,39 +299,38 @@ export class ReturnService {
     const order = await this.orders.findOneForUser(userId, orderId);
     const eligible =
       RETURNABLE_STATUSES.includes(order.status) && order.paymentStatus === PaymentStatus.PAID;
-    const items: Array<Record<string, unknown>> = [];
-    for (const item of order.items) {
-      const returned = await this.alreadyReturned(item.id);
-      items.push({
+    const returnedMap = await this.alreadyReturnedMany(order.items.map((i) => i.id));
+    const items = order.items.map((item) => {
+      const returned = returnedMap.get(item.id) ?? 0;
+      return {
         orderItemId: item.id,
         productName: item.productName,
         ordered: item.quantity,
         returned,
         returnable: item.quantity - returned,
-      });
-    }
+      };
+    });
     return { eligible, items };
   }
 
-  private async alreadyReturned(orderItemId: string): Promise<number> {
-    const rows = await this.dataSource.query(
-      `SELECT COALESCE(SUM(ri.quantity),0)::int AS n
+  /** Sum of returned (non-rejected/cancelled) quantity per order item, in one query. */
+  private async alreadyReturnedMany(orderItemIds: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (!orderItemIds.length) return map;
+    const rows: Array<{ orderItemId: string; n: number }> = await this.dataSource.query(
+      `SELECT ri."orderItemId" AS "orderItemId", COALESCE(SUM(ri.quantity),0)::int AS n
        FROM return_items ri JOIN return_requests rr ON rr.id = ri."returnRequestId"
-       WHERE ri."orderItemId" = $1 AND rr.status NOT IN ('REJECTED','CANCELLED')`,
-      [orderItemId],
+       WHERE ri."orderItemId" = ANY($1) AND rr.status NOT IN ('REJECTED','CANCELLED')
+       GROUP BY ri."orderItemId"`,
+      [orderItemIds],
     );
-    return rows[0]?.n ?? 0;
+    for (const r of rows) map.set(r.orderItemId, r.n);
+    return map;
   }
 
   private async isFullReturn(orderId: string): Promise<boolean> {
     const order = await this.orders.adminFindOne(orderId);
-    for (const item of order.items) {
-      if ((await this.alreadyReturned(item.id)) < item.quantity) return false;
-    }
-    return true;
+    const returnedMap = await this.alreadyReturnedMany(order.items.map((i) => i.id));
+    return order.items.every((item) => (returnedMap.get(item.id) ?? 0) >= item.quantity);
   }
-}
-
-function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }

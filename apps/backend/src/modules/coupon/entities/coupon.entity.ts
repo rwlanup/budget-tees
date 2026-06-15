@@ -1,11 +1,8 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numericNullable } from '../../../common/utils/numeric-transformer';
 import { CouponAppliesTo, CouponType } from '../enums/coupon.enums';
-
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
+import { CouponCategory, CouponProduct, CouponRedemption } from './coupon-links.entity';
 
 @Entity('coupons')
 export class Coupon extends BaseEntity {
@@ -70,4 +67,13 @@ export class Coupon extends BaseEntity {
   @Index()
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @OneToMany(() => CouponProduct, (cp) => cp.coupon)
+  products: CouponProduct[];
+
+  @OneToMany(() => CouponCategory, (cc) => cc.coupon)
+  categories: CouponCategory[];
+
+  @OneToMany(() => CouponRedemption, (r) => r.coupon)
+  redemptions: CouponRedemption[];
 }

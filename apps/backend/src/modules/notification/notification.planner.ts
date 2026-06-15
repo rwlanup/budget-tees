@@ -1,4 +1,8 @@
-import { NotificationActorType, NotificationRecipientType, NotificationType } from './enums/notification.enums';
+import {
+  NotificationActorType,
+  NotificationRecipientType,
+  NotificationType,
+} from './enums/notification.enums';
 import { NotificationEvent } from './notification-event';
 
 /** A notification row ready to persist (recipient resolved, self-notification already excluded). */
@@ -44,19 +48,40 @@ function paymentCustomerCopy(paymentStatus: string): { title: string; message: s
  *
  * @param adminIds eligible admin user ids (already filtered by permission + active status).
  */
-export function planNotifications(event: NotificationEvent, adminIds: string[]): PlannedNotification[] {
+export function planNotifications(
+  event: NotificationEvent,
+  adminIds: string[],
+): PlannedNotification[] {
   const actorId = event.actorId ?? null;
   const actorType = event.actorType ?? null;
   const out: PlannedNotification[] = [];
 
-  const base = (recipientType: NotificationRecipientType, recipientId: string, p: Omit<PlannedNotification, 'recipientType' | 'recipientId' | 'type' | 'actorId' | 'actorType'>): void => {
+  const base = (
+    recipientType: NotificationRecipientType,
+    recipientId: string,
+    p: Omit<
+      PlannedNotification,
+      'recipientType' | 'recipientId' | 'type' | 'actorId' | 'actorType'
+    >,
+  ): void => {
     if (!recipientId || recipientId === actorId) return; // self-notification suppression
     out.push({ recipientType, recipientId, type: event.type, actorId, actorType, ...p });
   };
-  const eachAdmin = (p: Omit<PlannedNotification, 'recipientType' | 'recipientId' | 'type' | 'actorId' | 'actorType'>): void => {
+  const eachAdmin = (
+    p: Omit<
+      PlannedNotification,
+      'recipientType' | 'recipientId' | 'type' | 'actorId' | 'actorType'
+    >,
+  ): void => {
     for (const id of adminIds) base(NotificationRecipientType.ADMIN, id, p);
   };
-  const customer = (userId: string | null | undefined, p: Omit<PlannedNotification, 'recipientType' | 'recipientId' | 'type' | 'actorId' | 'actorType'>): void => {
+  const customer = (
+    userId: string | null | undefined,
+    p: Omit<
+      PlannedNotification,
+      'recipientType' | 'recipientId' | 'type' | 'actorId' | 'actorType'
+    >,
+  ): void => {
     if (userId) base(NotificationRecipientType.CUSTOMER, userId, p);
   };
 

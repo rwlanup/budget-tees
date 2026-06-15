@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { ProductMedia } from './entities/product-media.entity';
 import { MediaService } from '../media/services/media.service';
 import { SetProductMediaDto } from './dto/set-media.dto';
@@ -52,6 +52,28 @@ export class ProductMediaService {
       isPrimary: row.isPrimary,
       url: m.url,
     };
+  }
+
+  /**
+   * Batch counterpart to `getPrimaryMedia` for many products: maps each product
+   * id to its primary media URL in two queries (primary rows + media), instead
+   * of one round-trip per product. Same semantics — strictly the `isPrimary`
+   * row (no first-row fallback); a missing primary row or media yields no entry
+   * (callers treat absent as null).
+   */
+  async primaryMediaUrlByProduct(productIds: string[]): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    if (!productIds.length) return map;
+    const rows = await this.repo.find({ where: { productId: In(productIds), isPrimary: true } });
+    if (!rows.length) return map;
+    const urlByMediaId = new Map(
+      (await this.media.findManyByIds(rows.map((r) => r.mediaId))).map((m) => [m.id, m.url]),
+    );
+    for (const r of rows) {
+      const url = urlByMediaId.get(r.mediaId);
+      if (url != null) map.set(r.productId, url);
+    }
+    return map;
   }
 
   /** Replace the full gallery in one transaction; enforces exactly one primary. */

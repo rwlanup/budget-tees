@@ -8,11 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Payment } from './payment.entity';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
+import { numeric } from '../../../common/utils/numeric-transformer';
 
 @Entity('payment_refunds')
 export class PaymentRefund {

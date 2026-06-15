@@ -14,6 +14,13 @@ export class StorefrontController {
     return this.storefront.listVariants(query);
   }
 
+  /** Top tags by count of in-stock published products (homepage quick links). */
+  @Get('tags/top')
+  @Public()
+  topTags() {
+    return this.storefront.topTags();
+  }
+
   /** Variant-aware product detail (PDP). */
   @Get('products/:idOrSlug')
   @Public()

@@ -1,11 +1,8 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numeric } from '../../../common/utils/numeric-transformer';
 import { Order } from './order.entity';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
+import { Sku } from '../../sku/entities/sku.entity';
 
 @Entity('order_items')
 export class OrderItem extends BaseEntity {
@@ -20,6 +17,11 @@ export class OrderItem extends BaseEntity {
   @Column({ type: 'uuid' })
   skuId: string;
 
+  @ManyToOne(() => Sku, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'skuId' })
+  sku: Sku;
+
+  // productId is an immutable snapshot reference (no FK) — intentionally not mapped to a relation.
   @Column({ type: 'uuid' })
   productId: string;
 

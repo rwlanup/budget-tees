@@ -9,7 +9,7 @@ const STATUS: Record<ReturnStatus, { label: string; dot: string }> = {
   AWAITING_ITEMS: { label: 'Awaiting items', dot: 'bg-warning' },
   RECEIVED: { label: 'Received', dot: 'bg-success' },
   COMPLETED: { label: 'Completed', dot: 'bg-success' },
-  CANCELLED: { label: 'Cancelled', dot: 'bg-muted-foreground' },
+  CANCELLED: { label: 'Cancelled', dot: 'bg-destructive' },
 };
 
 export function ReturnStatusBadge({ status }: { status: ReturnStatus }) {

@@ -1,6 +1,9 @@
-import { Column, Entity, Index, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numeric, numericNullable } from '../../../common/utils/numeric-transformer';
 import { Product } from '../../product/entities/product.entity';
+import { Media } from '../../media/entities/media.entity';
+import { SkuAttributeValue } from './sku-attribute-value.entity';
 
 /**
  * Immutable display snapshot of a SKU at a point in time. Stored (e.g. on a
@@ -16,16 +19,6 @@ export interface SkuSnapshot {
   unitPrice: number;
   imageMediaId: string | null;
 }
-
-// numeric(12,2) comes back as string from pg — coerce to number.
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
 
 @Entity('skus')
 export class Sku extends BaseEntity {
@@ -83,6 +76,10 @@ export class Sku extends BaseEntity {
   @Column({ type: 'uuid', nullable: true })
   imageMediaId: string | null;
 
+  @ManyToOne(() => Media, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'imageMediaId' })
+  image: Media | null;
+
   @Index()
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
@@ -97,4 +94,7 @@ export class Sku extends BaseEntity {
 
   @ManyToOne(() => Product, (product) => product.skus)
   product: Product;
+
+  @OneToMany(() => SkuAttributeValue, (sav) => sav.sku)
+  attributeValues: SkuAttributeValue[];
 }

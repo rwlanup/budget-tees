@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, QueryFailedError, Repository } from 'typeorm';
 import { Brand } from './entities/brand.entity';
 import { MediaService } from '../media/services/media.service';
-import { slugify, uniqueSlug } from '../../common/utils/slugify';
+import { isUuid } from '../../common/utils/uuid';
+import { resolveUniqueSlug } from '../../common/utils/resolve-unique-slug';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
 import { CreateBrandDto, ListBrandQueryDto, UpdateBrandDto } from './dto/brand.dto';
 
@@ -101,14 +102,7 @@ export class BrandService {
     }
   }
 
-  private async resolveSlug(base: string, excludeId?: string): Promise<string> {
-    return uniqueSlug(slugify(base), async (candidate) => {
-      const existing = await this.repo.findOne({ where: { slug: candidate } });
-      return !!existing && existing.id !== excludeId;
-    });
+  private resolveSlug(base: string, excludeId?: string): Promise<string> {
+    return resolveUniqueSlug(this.repo, base, { excludeId });
   }
-}
-
-function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }

@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -31,7 +30,14 @@ import { ApiError } from '@/lib/api/client';
 import { createSaleSchema, type CreateSaleInput } from '../schemas';
 import { useCreateSale } from '../queries';
 import { SALE_SCOPES, SALE_TYPES, type SaleScope, type SaleType } from '../types';
-import { ScopeTargets, localInputToIso } from './sale-form-fields';
+import {
+  SaleActiveToggle,
+  SaleMaxCapField,
+  SaleScheduleFields,
+  SaleValueField,
+  ScopeTargets,
+  localInputToIso,
+} from './sale-form-fields';
 
 const SCOPE_LABEL: Record<SaleScope, string> = {
   PRODUCTS: 'Specific products',
@@ -138,60 +144,8 @@ export function SaleCreateForm() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="value"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{type === 'PERCENTAGE' ? 'Percent off' : 'Amount off'}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step={type === 'PERCENTAGE' ? 1 : 0.01}
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        value={String(field.value ?? 0)}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="maxDiscountAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Max cap</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        value={
-                          field.value === null || field.value === undefined
-                            ? ''
-                            : String(field.value)
-                        }
-                        onChange={(e) =>
-                          field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormDescription>For %</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <SaleValueField control={form.control} saleType={type} />
+              <SaleMaxCapField control={form.control} description="For %" />
             </div>
 
             <FormField
@@ -240,47 +194,9 @@ export function SaleCreateForm() {
               </p>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="startsAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Starts</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endsAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ends</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <SaleScheduleFields control={form.control} />
 
-            <FormField
-              control={form.control}
-              name="isActive"
-              render={({ field }) => (
-                <FormItem className="flex items-center gap-3 space-y-0">
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <FormLabel className="!mt-0">Active</FormLabel>
-                </FormItem>
-              )}
-            />
+            <SaleActiveToggle control={form.control} />
 
             <div className="flex items-center gap-3">
               <SubmitButton pending={create.isPending} pendingText="Creating…">

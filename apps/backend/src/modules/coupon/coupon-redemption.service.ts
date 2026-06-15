@@ -47,7 +47,10 @@ export class CouponRedemptionService {
       NOT_ELIGIBLE: 'Cart not eligible for this coupon',
       MIN_ORDER_NOT_MET: 'Minimum order amount not met for this coupon',
     };
-    throw new UnprocessableEntityException(messageMap[reason] || reason, { cause: reason, description: reason });
+    throw new UnprocessableEntityException(messageMap[reason] || reason, {
+      cause: reason,
+      description: reason,
+    });
   }
 
   async validateOrThrow(code: string, ctx: CouponContext): Promise<CouponResult> {

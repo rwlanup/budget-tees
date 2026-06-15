@@ -40,7 +40,13 @@ export class NotificationsService {
       const planned = planNotifications(event, adminIds);
       if (!planned.length) return;
       // ON CONFLICT DO NOTHING against the (recipientId, deduplicationKey) unique index → dedup.
-      await this.repo.createQueryBuilder().insert().into(Notification).values(planned).orIgnore().execute();
+      await this.repo
+        .createQueryBuilder()
+        .insert()
+        .into(Notification)
+        .values(planned)
+        .orIgnore()
+        .execute();
     } catch (err) {
       this.logger.error(`Failed to dispatch ${event.type} notification`, err as Error);
     }

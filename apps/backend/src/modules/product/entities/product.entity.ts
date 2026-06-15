@@ -15,6 +15,8 @@ import { Brand } from '../../brand/entities/brand.entity';
 import { Tag } from '../../tag/entities/tag.entity';
 import { ProductStatus, ProductType } from '../enums/product.enums';
 import { Sku } from '../../sku/entities/sku.entity';
+import { TaxClass } from '../../tax/entities/tax-class.entity';
+import { ProductMedia } from './product-media.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
@@ -51,6 +53,10 @@ export class Product extends BaseEntity {
   @Column({ type: 'uuid', nullable: true })
   taxClassId: string | null;
 
+  @ManyToOne(() => TaxClass, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'taxClassId' })
+  taxClass: TaxClass | null;
+
   @Column({ type: 'enum', enum: ProductType, default: ProductType.SIMPLE })
   type: ProductType;
 
@@ -61,6 +67,10 @@ export class Product extends BaseEntity {
   /** FK constraint to skus added in the SKU migration. */
   @Column({ type: 'uuid', nullable: true })
   defaultSkuId: string | null;
+
+  @ManyToOne(() => Sku, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'defaultSkuId' })
+  defaultSku: Sku | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   publishedAt: Date | null;
@@ -85,4 +95,7 @@ export class Product extends BaseEntity {
 
   @OneToMany(() => Sku, (sku) => sku.product)
   skus: Sku[];
+
+  @OneToMany(() => ProductMedia, (pm) => pm.product)
+  media: ProductMedia[];
 }

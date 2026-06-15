@@ -1,15 +1,8 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numeric, numericNullable } from '../../../common/utils/numeric-transformer';
 import { SaleScope, SaleType } from '../enums/sale.enums';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
+import { SaleCategory, SaleExcludedProduct, SaleProduct } from './sale-links.entity';
 
 @Entity('sales')
 export class Sale extends BaseEntity {
@@ -43,4 +36,13 @@ export class Sale extends BaseEntity {
   @Index()
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @OneToMany(() => SaleProduct, (sp) => sp.sale)
+  products: SaleProduct[];
+
+  @OneToMany(() => SaleCategory, (sc) => sc.sale)
+  categories: SaleCategory[];
+
+  @OneToMany(() => SaleExcludedProduct, (sx) => sx.sale)
+  excludedProducts: SaleExcludedProduct[];
 }

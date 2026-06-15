@@ -49,11 +49,19 @@ export interface StorefrontAxis {
   values: { id: string; value: string; meta: unknown }[];
 }
 
+export interface StorefrontAttribute {
+  attributeId: string;
+  name: string;
+  isVariation: boolean;
+  values: { id: string; value: string }[];
+}
+
 export interface StorefrontProductDetail {
   product: {
     id: string;
     name: string;
     slug: string;
+    type: 'SIMPLE' | 'VARIABLE';
     description: string | null;
     shortDescription: string | null;
     metaTitle: string | null;
@@ -64,8 +72,18 @@ export interface StorefrontProductDetail {
   };
   gallery: { mediaId: string; url: string | null; isPrimary: boolean; alt: string | null }[];
   axes: StorefrontAxis[];
+  /** All attributes assigned to the product (variation + fixed specs). */
+  attributes: StorefrontAttribute[];
   variants: StorefrontVariantDetail[];
   defaultSkuId: string | null;
+}
+
+/** Mirrors backend `TopTag` — tag ranked by in-stock published product count. */
+export interface TopTag {
+  id: string;
+  name: string;
+  slug: string;
+  productCount: number;
 }
 
 export type CatalogSort = 'newest' | 'price_asc' | 'price_desc' | 'name';

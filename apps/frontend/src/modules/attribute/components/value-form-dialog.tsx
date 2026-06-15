@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { numericFieldProps } from '@/lib/form-utils';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/shared/submit-button';
 import { FormError } from '@/components/shared/form-error';
@@ -182,13 +183,7 @@ export function ValueFormDialog({ open, onOpenChange, attributeId, attributeType
                       type="number"
                       inputMode="numeric"
                       className="max-w-28"
-                      name={field.name}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      value={String(field.value ?? 0)}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
-                      }
+                      {...numericFieldProps(field)}
                     />
                   </FormControl>
                   <FormMessage />

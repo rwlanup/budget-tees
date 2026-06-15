@@ -40,7 +40,7 @@ export function LowStockReport() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>SKU</TableHead>
+              <TableHead>Product SKU</TableHead>
               <TableHead className="text-right">Available</TableHead>
               <TableHead className="text-right">Threshold</TableHead>
               <TableHead className="w-28" />
@@ -50,7 +50,8 @@ export function LowStockReport() {
             {list.map((sku) => (
               <TableRow key={sku.id}>
                 <TableCell>
-                  <code className="text-sm font-medium">{sku.sku}</code>
+                  {sku.name && <div className="text-sm font-medium">{sku.name}</div>}
+                  <code className="text-xs text-muted-foreground">{sku.sku}</code>
                 </TableCell>
                 <TableCell className="text-right">
                   <Badge

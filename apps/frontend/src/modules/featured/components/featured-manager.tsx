@@ -12,24 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,23 +22,19 @@ import {
 import { DataState } from '@/components/shared/data-state';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import { FormError } from '@/components/shared/form-error';
 import { ApiError } from '@/lib/api/client';
 import { useProducts } from '@/modules/product/queries';
-import { useAddFeatured, useFeatured, useRemoveFeatured, useUpdateFeatured } from '../queries';
+import { useFeatured, useRemoveFeatured, useUpdateFeatured } from '../queries';
 import type { FeaturedProduct } from '../types';
+import { FeaturedAddDialog } from './featured-add-dialog';
 
 export function FeaturedManager() {
   const { data, isLoading, isError, refetch } = useFeatured();
   const { data: products } = useProducts({ page: 1, limit: 100, status: 'PUBLISHED' });
-  const addFeatured = useAddFeatured();
   const updateFeatured = useUpdateFeatured();
   const removeFeatured = useRemoveFeatured();
 
   const [addOpen, setAddOpen] = React.useState(false);
-  const [productId, setProductId] = React.useState('');
-  const [sortOrder, setSortOrder] = React.useState('0');
-  const [addError, setAddError] = React.useState<string[] | null>(null);
   const [target, setTarget] = React.useState<FeaturedProduct | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
@@ -73,32 +52,6 @@ export function FeaturedManager() {
   // Published products not already featured.
   const featuredIds = new Set(rows.map((r) => r.productId));
   const addable = (products?.items ?? []).filter((p) => !featuredIds.has(p.id));
-
-  const openAdd = () => {
-    setProductId('');
-    setSortOrder(String(rows.length));
-    setAddError(null);
-    setAddOpen(true);
-  };
-
-  const submitAdd = () => {
-    setAddError(null);
-    if (!productId) {
-      setAddError(['Select a product']);
-      return;
-    }
-    addFeatured.mutate(
-      { productId, sortOrder: Number(sortOrder) || 0 },
-      {
-        onSuccess: () => {
-          toast.success('Product featured');
-          setAddOpen(false);
-        },
-        onError: (err) =>
-          setAddError(err instanceof ApiError ? err.messages : ['Failed to feature product']),
-      },
-    );
-  };
 
   const toggleActive = (row: FeaturedProduct, isActive: boolean) =>
     updateFeatured.mutate(
@@ -134,7 +87,7 @@ export function FeaturedManager() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={openAdd}>
+        <Button onClick={() => setAddOpen(true)}>
           <Plus className="size-4" aria-hidden />
           Feature a product
         </Button>
@@ -150,7 +103,7 @@ export function FeaturedManager() {
             icon={Star}
             title="No featured products"
             description="Feature published products to highlight them on the storefront homepage."
-            action={<Button onClick={openAdd}>Feature a product</Button>}
+            action={<Button onClick={() => setAddOpen(true)}>Feature a product</Button>}
           />
         }
       >
@@ -232,60 +185,12 @@ export function FeaturedManager() {
         </p>
       </DataState>
 
-      <Dialog open={addOpen} onOpenChange={(o) => !addFeatured.isPending && setAddOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Feature a product</DialogTitle>
-            <DialogDescription>Only published products can be featured.</DialogDescription>
-          </DialogHeader>
-          <FormError messages={addError} />
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Product</Label>
-              <Select value={productId} onValueChange={setProductId}>
-                <SelectTrigger aria-label="Product">
-                  <SelectValue placeholder="Select product" />
-                </SelectTrigger>
-                <SelectContent>
-                  {addable.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {addable.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No more published products to feature (first 100 shown).
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="feat-sort">Sort order</Label>
-              <Input
-                id="feat-sort"
-                type="number"
-                min={0}
-                className="max-w-28"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setAddOpen(false)}
-              disabled={addFeatured.isPending}
-            >
-              Cancel
-            </Button>
-            <Button onClick={submitAdd} disabled={addFeatured.isPending || !productId}>
-              {addFeatured.isPending ? 'Adding…' : 'Feature'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FeaturedAddDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        addable={addable}
+        defaultSort={rows.length}
+      />
 
       <ConfirmDialog
         open={!!target}

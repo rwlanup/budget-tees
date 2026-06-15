@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Eye, EyeOff, MessageSquare, MoreHorizontal, Star, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, MessageSquare, MoreHorizontal, ScrollText, Star, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -36,6 +36,7 @@ import { formatDate } from '@/lib/utils';
 import { useAdminDeleteReview, useAdminReviews, useSetReviewStatus } from '../queries';
 import type { AdminReview, ReviewStatus } from '../types';
 import { ReviewStatusBadge } from './review-status-badge';
+import { ReviewDetailDialog } from './review-detail-dialog';
 
 const PAGE_SIZE = 20;
 const ALL = 'all';
@@ -67,6 +68,7 @@ export function AdminReviewsTable() {
 
   const [deleteTarget, setDeleteTarget] = React.useState<AdminReview | null>(null);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [viewTarget, setViewTarget] = React.useState<AdminReview | null>(null);
 
   const reviews = data?.items ?? [];
   const isEmpty = !isLoading && !isError && reviews.length === 0;
@@ -143,13 +145,22 @@ export function AdminReviewsTable() {
               {reviews.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="max-w-sm">
-                    {r.title && <span className="font-medium">{r.title}</span>}
-                    {r.body && (
-                      <span className="line-clamp-2 text-sm text-muted-foreground">{r.body}</span>
-                    )}
-                    {!r.title && !r.body && (
-                      <span className="text-sm text-muted-foreground">No text</span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setViewTarget(r)}
+                      className="flex flex-col text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group cursor-pointer"
+                      aria-label="View review details"
+                    >
+                      {r.title && (
+                        <span className="font-medium group-hover:underline">{r.title}</span>
+                      )}
+                      {r.body && (
+                        <span className="line-clamp-2 text-sm text-muted-foreground">{r.body}</span>
+                      )}
+                      {!r.title && !r.body && (
+                        <span className="text-sm text-muted-foreground">No text</span>
+                      )}
+                    </button>
                   </TableCell>
                   <TableCell className="text-right">
                     <span className="inline-flex items-center gap-1 tabular-nums">
@@ -162,7 +173,7 @@ export function AdminReviewsTable() {
                       href={`/admin/products/${r.productId}`}
                       className="font-mono text-xs hover:underline"
                     >
-                      {r.productId.slice(0, 8)}…
+                      {r.product?.name ?? r.productId}
                     </Link>
                   </TableCell>
                   <TableCell>
@@ -179,6 +190,10 @@ export function AdminReviewsTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setViewTarget(r)}>
+                          <ScrollText className="size-4" aria-hidden />
+                          View details
+                        </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => toggleStatus(r)}>
                           {r.status === 'PUBLISHED' ? (
                             <>
@@ -220,6 +235,8 @@ export function AdminReviewsTable() {
           />
         )}
       </DataState>
+
+      <ReviewDetailDialog review={viewTarget} onOpenChange={(o) => !o && setViewTarget(null)} />
 
       <ConfirmDialog
         open={!!deleteTarget}

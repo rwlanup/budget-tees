@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation';
 import { Search, Sparkles, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTopTags } from '@/modules/catalog/queries';
 import { StorefrontContainer } from './storefront-container';
-
-const QUICK_LINKS = ['Tees', 'Fit', 'Oversized', 'Shirt'];
 
 /** Homepage hero with inline search (no carousel, per design). */
 export function HeroSearch() {
   const router = useRouter();
   const [q, setQ] = React.useState('');
+  const { data: topTags, isLoading: tagsLoading } = useTopTags();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,13 +72,17 @@ export function HeroSearch() {
         </form>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          {QUICK_LINKS.map((label) => (
+          {tagsLoading &&
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-8.5 w-16 rounded-full" />
+            ))}
+          {(topTags ?? []).map((tag) => (
             <Link
-              key={label}
-              href={`/search?q=${encodeURIComponent(label)}`}
+              key={tag.id}
+              href={`/search?q=${encodeURIComponent(tag.name)}`}
               className="press rounded-full border bg-card/60 px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
             >
-              {label}
+              {tag.name}
             </Link>
           ))}
           <Link

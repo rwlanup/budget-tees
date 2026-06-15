@@ -1,12 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductStatus } from './enums/product.enums';
 import { CategoryService } from '../category/category.service';
 import { BrandService } from '../brand/brand.service';
 import { TagService } from '../tag/tag.service';
-import { slugify, uniqueSlug } from '../../common/utils/slugify';
+import { isUuid } from '../../common/utils/uuid';
+import { resolveUniqueSlug } from '../../common/utils/resolve-unique-slug';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
 import {
   CreateProductDto,
@@ -111,6 +112,28 @@ export class ProductService {
     return paginate(items, total, query.page, query.limit);
   }
 
+  /**
+   * Batch sibling of `findOneByIdOrSlug(id, true)`: published, non-soft-deleted
+   * products by id (eager relations loaded). Ids that are missing or not
+   * published are simply absent from the result — callers skip them, matching
+   * the previous per-row `findOneByIdOrSlug(...).catch(() => null)` pattern.
+   */
+  async findPublishedByIds(ids: string[]): Promise<Product[]> {
+    if (!ids.length) return [];
+    return this.repo.find({ where: { id: In(ids), status: ProductStatus.PUBLISHED } });
+  }
+
+  /**
+   * Batch lookup by id, any status, excluding soft-deleted (eager relations
+   * loaded) — matches the default scope of `findOneByIdOrSlug(id, false)`.
+   * Used where status is decided by the caller (e.g. cart pricing resolves
+   * sales regardless of publish state).
+   */
+  async findByIds(ids: string[]): Promise<Product[]> {
+    if (!ids.length) return [];
+    return this.repo.find({ where: { id: In(ids) } });
+  }
+
   async findOneByIdOrSlug(idOrSlug: string, publicOnly = true): Promise<Product> {
     const where = isUuid(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug };
     const product = await this.repo.findOne({ where });
@@ -187,14 +210,7 @@ export class ProductService {
     }
   }
 
-  private async resolveSlug(base: string, excludeId?: string): Promise<string> {
-    return uniqueSlug(slugify(base), async (candidate) => {
-      const existing = await this.repo.findOne({ where: { slug: candidate }, withDeleted: true });
-      return !!existing && existing.id !== excludeId;
-    });
+  private resolveSlug(base: string, excludeId?: string): Promise<string> {
+    return resolveUniqueSlug(this.repo, base, { excludeId, withDeleted: true });
   }
-}
-
-function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }

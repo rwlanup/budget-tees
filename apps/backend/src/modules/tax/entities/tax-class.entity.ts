@@ -1,5 +1,6 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { TaxRate } from './tax-rate.entity';
 
 @Entity('tax_classes')
 export class TaxClass extends BaseEntity {
@@ -16,4 +17,7 @@ export class TaxClass extends BaseEntity {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @OneToMany(() => TaxRate, (r) => r.taxClass)
+  rates: TaxRate[];
 }

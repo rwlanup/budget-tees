@@ -2,6 +2,7 @@ import { Column, DeleteDateColumn, Entity, Index, JoinColumn, ManyToOne } from '
 import { Exclude } from 'class-transformer';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Role } from '../../role/entities/role.entity';
+import { Media } from '../../media/entities/media.entity';
 import { UserStatus } from '../enums/user-status.enum';
 
 @Entity('users')
@@ -35,6 +36,10 @@ export class User extends BaseEntity {
 
   @Column({ type: 'uuid', nullable: true })
   avatarMediaId: string | null;
+
+  @ManyToOne(() => Media, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'avatarMediaId' })
+  avatar: Media | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginAt: Date | null;

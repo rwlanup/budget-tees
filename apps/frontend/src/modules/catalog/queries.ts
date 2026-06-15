@@ -36,6 +36,15 @@ export function useFeatured() {
   });
 }
 
+/** Top tags by in-stock product count (homepage quick links). */
+export function useTopTags() {
+  return useQuery({
+    queryKey: [...catalogKeys.all, 'top-tags'] as const,
+    queryFn: () => catalogApi.topTags(),
+    staleTime: 5 * 60_000,
+  });
+}
+
 /** Product gallery (for wishlist/related thumbnails). Returns the primary image url. */
 export function useProductPrimaryImage(productId: string) {
   return useQuery({

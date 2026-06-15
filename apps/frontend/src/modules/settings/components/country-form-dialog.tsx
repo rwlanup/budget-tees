@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { numericFieldProps } from '@/lib/form-utils';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/shared/submit-button';
@@ -167,13 +168,7 @@ export function CountryFormDialog({ open, onOpenChange, country }: CountryFormDi
                         type="number"
                         inputMode="numeric"
                         className="max-w-28"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        value={String(field.value ?? 0)}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
-                        }
+                        {...numericFieldProps(field)}
                       />
                     </FormControl>
                     <FormMessage />

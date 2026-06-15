@@ -4,6 +4,7 @@ import { SkuService } from '../sku/services/sku.service';
 import { SaleResolverService } from '../product-sale/services/sale-resolver.service';
 import { ProductService } from '../product/product.service';
 import { ProductMediaService } from '../product/product-media.service';
+import { ProductStatus } from '../product/enums/product.enums';
 import { MediaService } from '../media/services/media.service';
 import { addMoney, multiplyMoney } from '../../common/utils/money';
 
@@ -45,30 +46,57 @@ export class CartPricingService {
   ) {}
 
   async price(cart: Cart): Promise<PricedCart> {
+    const items = cart.items ?? [];
+
+    // Batch all per-line lookups up front (was 4 queries × line):
+    //  • SKUs by id
+    //  • products by the SKUs' productIds (any status — sales price unpublished
+    //    products too; publish state only gates display/availability below)
+    //  • one sale-pricer for every product
+    //  • SKU images + (published) product primary images
+    const skuMap = new Map(
+      (await this.skus.findByIds(items.map((i) => i.skuId))).map((s) => [s.id, s]),
+    );
+    const productIds = [...new Set([...skuMap.values()].map((s) => s.productId))];
+    const productMap = new Map((await this.products.findByIds(productIds)).map((p) => [p.id, p]));
+    const pricer = await this.sales.buildPricer(
+      [...productMap.values()].map((p) => ({ id: p.id, categoryId: p.categoryId })),
+    );
+    const skuImageUrl = new Map(
+      (
+        await this.media.findManyByIds(
+          [...skuMap.values()].map((s) => s.imageMediaId).filter((id): id is string => !!id),
+        )
+      ).map((m) => [m.id, m.url]),
+    );
+    const primaryUrlByProduct = await this.productMedia.primaryMediaUrlByProduct(
+      [...productMap.values()].filter((p) => p.status === ProductStatus.PUBLISHED).map((p) => p.id),
+    );
+
     const lines: PricedCartLine[] = [];
-    for (const item of cart.items ?? []) {
-      const sku = await this.skus.findOne(item.skuId).catch(() => null);
-      const product = sku
-        ? await this.products.findOneByIdOrSlug(sku.productId, true).catch(() => null)
-        : null;
+    for (const item of items) {
+      const sku = skuMap.get(item.skuId) ?? null;
+      // Published product (or null) — mirrors the previous findOneByIdOrSlug(_, true).
+      const rawProduct = sku ? (productMap.get(sku.productId) ?? null) : null;
+      const product = rawProduct?.status === ProductStatus.PUBLISHED ? rawProduct : null;
       const unavailable = !sku || !sku.isActive || !product;
       const basePrice = sku?.price ?? 0;
       const resolved = sku
-        ? await this.sales.resolveForProduct(sku.productId, basePrice)
+        ? pricer.price(sku.productId, basePrice)
         : { salePrice: 0, onSale: false };
       const unitPrice = resolved.salePrice;
       const available = sku ? sku.stock - sku.reserved : 0;
       // Prefer the variant's own image; fall back to the product's primary.
-      const media = sku?.imageMediaId
-        ? await this.media.findOne(sku.imageMediaId).catch(() => null)
+      const imageUrl = sku?.imageMediaId
+        ? (skuImageUrl.get(sku.imageMediaId) ?? null)
         : product
-          ? await this.productMedia.getPrimaryMedia(product.id).catch(() => null)
+          ? (primaryUrlByProduct.get(product.id) ?? null)
           : null;
       lines.push({
         itemId: item.id,
         skuId: item.skuId,
         productId: sku?.productId ?? '',
-        productName: product?.name ?? '(unavailable)',
+        productName: sku?.name ?? product?.name ?? '(unavailable)',
         quantity: item.quantity,
         unitPrice,
         basePrice,
@@ -77,7 +105,7 @@ export class CartPricingService {
         available,
         inStock: available >= item.quantity,
         unavailable,
-        imageUrl: media?.url ?? null,
+        imageUrl,
       });
     }
     const subtotal = addMoney(...lines.filter((l) => !l.unavailable).map((l) => l.lineTotal));

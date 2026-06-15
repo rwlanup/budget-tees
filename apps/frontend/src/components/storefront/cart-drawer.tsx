@@ -64,7 +64,7 @@ export function CartDrawer() {
             {items.map((line) => (
               <li key={line.itemId} className="flex items-start gap-3 py-4">
                 <Link
-                  href={`/product/${line.productId}`}
+                  href={`/product/${line.productId}?sku=${line.skuId}`}
                   className="shrink-0"
                   aria-label={line.productName}
                   onClick={() => setOpen(false)}
@@ -76,8 +76,14 @@ export function CartDrawer() {
                   />
                 </Link>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{line.productName}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <Link
+                    href={`/product/${line.productId}?sku=${line.skuId}`}
+                    className="font-medium truncate block"
+                    onClick={() => setOpen(false)}
+                  >
+                    {line.productName}
+                  </Link>
+                  <p className="text-sm mt-1 text-muted-foreground">
                     Qty {line.quantity} · {formatCurrency(line.unitPrice, currency)}
                   </p>
                   {line.unavailable ? (

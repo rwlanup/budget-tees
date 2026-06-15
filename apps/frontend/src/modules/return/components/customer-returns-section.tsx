@@ -75,9 +75,7 @@ export function CustomerReturnsSection({ order }: { order: Order }) {
         <ul className="divide-y">
           {returns.map((r) => {
             const exchangeItems =
-              r.resolutionType === 'EXCHANGE'
-                ? (r.items ?? []).filter((i) => i.exchangeSku)
-                : [];
+              r.resolutionType === 'EXCHANGE' ? (r.items ?? []).filter((i) => i.exchangeSku) : [];
             return (
               <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
                 <span className="font-mono text-sm font-medium">{r.returnNumber}</span>

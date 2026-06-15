@@ -1,4 +1,6 @@
 import type { Paginated } from '@/types/api';
+import { User } from '../user/types';
+import { Product } from '../product/types';
 
 export type ReviewStatus = 'PUBLISHED' | 'HIDDEN';
 
@@ -56,4 +58,6 @@ export interface AdminReview {
   status: ReviewStatus;
   createdAt: string;
   updatedAt: string;
+  product?: Pick<Product, 'id' | 'slug' | 'name'>;
+  user?: Pick<User, 'id' | 'firstName' | 'lastName'>;
 }

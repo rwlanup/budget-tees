@@ -16,15 +16,15 @@ one (it only reads `User` to fan admin notifications out by permission).
 
 ## Triggers (where producers emit)
 
-| Event | Emitted from | Recipients (actor excluded) |
-| --- | --- | --- |
-| `ORDER_PLACED` | `CheckoutService.checkout` (post-commit) | admins (`order.manage`) |
-| `ORDER_STATUS_UPDATED` | `OrderService.emitConfirmation` / `emitStatusUpdate` | customer |
-| `PAYMENT_STATUS_UPDATED` | `PaymentService.applyStatus` (SUCCESS/FAILED/REVERTED) + `markOrderPaid`; `RefundService.refund` | customer + admins (`payment.manage`) |
-| `RETURN_CREATED` / `RETURN_CANCELLED` | `ReturnService.create` / `cancel` | admins (`return.manage`) |
-| `RETURN_STATUS_UPDATED` | `ReturnService.emitUpdate` (review/receive/resolve) | customer |
-| `CONTACT_SUBMITTED` | `ContactService.create` | admins (`contact.manage`) |
-| `LOW_STOCK` | `InventoryService.adjust` on threshold crossing (post-commit) | admins (`sku.manage`) |
+| Event                                 | Emitted from                                                                                     | Recipients (actor excluded)          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| `ORDER_PLACED`                        | `CheckoutService.checkout` (post-commit)                                                         | admins (`order.manage`)              |
+| `ORDER_STATUS_UPDATED`                | `OrderService.emitConfirmation` / `emitStatusUpdate`                                             | customer                             |
+| `PAYMENT_STATUS_UPDATED`              | `PaymentService.applyStatus` (SUCCESS/FAILED/REVERTED) + `markOrderPaid`; `RefundService.refund` | customer + admins (`payment.manage`) |
+| `RETURN_CREATED` / `RETURN_CANCELLED` | `ReturnService.create` / `cancel`                                                                | admins (`return.manage`)             |
+| `RETURN_STATUS_UPDATED`               | `ReturnService.emitUpdate` (review/receive/resolve)                                              | customer                             |
+| `CONTACT_SUBMITTED`                   | `ContactService.create`                                                                          | admins (`contact.manage`)            |
+| `LOW_STOCK`                           | `InventoryService.adjust` on threshold crossing (post-commit)                                    | admins (`sku.manage`)                |
 
 ## Conventions / gotchas
 

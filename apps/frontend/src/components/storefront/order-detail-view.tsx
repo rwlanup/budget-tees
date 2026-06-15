@@ -133,27 +133,31 @@ export function OrderDetailView({ order }: { order: Order }) {
         <Card className="gap-0 overflow-hidden p-0">
           <ul className="divide-y">
             {order.items.map((it) => (
-              <li
-                key={it.id}
-                className="flex items-center gap-4 p-4 transition-colors hover:bg-accent/40"
-              >
-                <div className="w-16 shrink-0 overflow-hidden rounded-lg border">
-                  <ProductImage src={it.imageUrl} alt={it.productName} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{it.productName}</p>
-                  {it.variant && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {Object.values(it.variant).join(' · ')}
+              <li key={it.id}>
+                <Link
+                  href={`/product/${it.productId}`}
+                  className="group flex items-center gap-4 p-4 transition-colors hover:bg-accent/40"
+                >
+                  <div className="w-16 shrink-0 overflow-hidden rounded-lg border">
+                    <ProductImage src={it.imageUrl} alt={it.productName} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium transition-colors group-hover:text-brand">
+                      {it.productName}
                     </p>
-                  )}
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatCurrency(it.unitPrice, currency)} × {it.quantity}
-                  </p>
-                </div>
-                <div className="text-right font-medium tabular-nums">
-                  {formatCurrency(it.lineTotal, currency)}
-                </div>
+                    {it.variant && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {Object.values(it.variant).join(' · ')}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {formatCurrency(it.unitPrice, currency)} × {it.quantity}
+                    </p>
+                  </div>
+                  <div className="text-right font-medium tabular-nums">
+                    {formatCurrency(it.lineTotal, currency)}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
@@ -184,7 +188,7 @@ export function OrderDetailView({ order }: { order: Order }) {
 
           <Card className="space-y-3 p-5 text-sm">
             <div>
-              <h3 className="flex items-center gap-2 font-medium">
+              <h3 className="flex items-center gap-2 font-medium mb-1">
                 {order.fulfillmentMethod === 'PICKUP' ? (
                   <MapPin className="size-4 text-muted-foreground" aria-hidden />
                 ) : (
@@ -210,7 +214,7 @@ export function OrderDetailView({ order }: { order: Order }) {
             </div>
             <Separator />
             <div>
-              <h3 className="flex items-center gap-2 font-medium">
+              <h3 className="flex items-center gap-2 font-medium mb-1">
                 <Receipt className="size-4 text-muted-foreground" aria-hidden />
                 Billing
               </h3>
@@ -226,14 +230,12 @@ export function OrderDetailView({ order }: { order: Order }) {
                   {billing.countryCode ? ` · ${billing.countryCode}` : ''}
                 </p>
               ) : (
-                <p className="text-muted-foreground">
-                  {addr ? 'Same as delivery address' : '—'}
-                </p>
+                <p className="text-muted-foreground">{addr ? 'Same as delivery address' : '—'}</p>
               )}
             </div>
             <Separator />
             <div>
-              <h3 className="flex items-center gap-2 font-medium">
+              <h3 className="flex items-center gap-2 font-medium mb-1">
                 <Mail className="size-4 text-muted-foreground" aria-hidden />
                 Contact
               </h3>
@@ -243,7 +245,7 @@ export function OrderDetailView({ order }: { order: Order }) {
             </div>
             <Separator />
             <div>
-              <h3 className="flex items-center gap-2 font-medium">
+              <h3 className="flex items-center gap-2 font-medium mb-1">
                 <CreditCard className="size-4 text-muted-foreground" aria-hidden />
                 Payment
               </h3>
@@ -265,7 +267,7 @@ export function OrderDetailView({ order }: { order: Order }) {
               <>
                 <Separator />
                 <div>
-                  <h3 className="flex items-center gap-2 font-medium">
+                  <h3 className="flex items-center gap-2 font-medium mb-1">
                     <StickyNote className="size-4 text-muted-foreground" aria-hidden />
                     Note
                   </h3>

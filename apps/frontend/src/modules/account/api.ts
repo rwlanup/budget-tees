@@ -31,4 +31,5 @@ export const addressApi = {
 export const profileApi = {
   update: (body: { firstName?: string; lastName?: string; avatarMediaId?: string }) =>
     apiFetch<AuthUser>('/users/me', { method: 'PATCH', body }),
+  deactivate: () => apiFetch<{ deactivated: boolean }>('/users/me/deactivate', { method: 'POST' }),
 };

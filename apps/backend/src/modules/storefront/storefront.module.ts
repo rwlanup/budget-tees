@@ -6,6 +6,7 @@ import { Product } from '../product/entities/product.entity';
 import { ProductMedia } from '../product/entities/product-media.entity';
 import { AttributeValue } from '../attribute/entities/attribute-value.entity';
 import { Attribute } from '../attribute/entities/attribute.entity';
+import { Tag } from '../tag/entities/tag.entity';
 import { ProductModule } from '../product/product.module';
 import { CategoryModule } from '../category/category.module';
 import { AttributeModule } from '../attribute/attribute.module';
@@ -23,6 +24,7 @@ import { StorefrontController } from './storefront.controller';
       ProductMedia,
       AttributeValue,
       Attribute,
+      Tag,
     ]),
     ProductModule,
     CategoryModule,

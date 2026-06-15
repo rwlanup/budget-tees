@@ -1,5 +1,6 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { User } from '../../user/entities/user.entity';
 import { VerificationTokenType } from '../enums/verification-token-type.enum';
 
 @Entity('verification_tokens')
@@ -7,6 +8,10 @@ export class VerificationToken extends BaseEntity {
   @Index()
   @Column({ type: 'uuid' })
   userId: string;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Index()
   @Column({ type: 'varchar', length: 255 })

@@ -25,7 +25,7 @@ export function RecentOrders() {
 
   return (
     <Card className="h-full overflow-hidden">
-      <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 border-b pb-5">
+      <CardHeader className="flex-row items-center justify-between flex gap-4 space-y-0 border-b pb-5">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Commerce

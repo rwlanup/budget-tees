@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { In, QueryFailedError, Repository } from 'typeorm';
 import { Media } from '../entities/media.entity';
 import { MediaVariant } from '../entities/media-variant.entity';
 import { MediaStatus, MediaType } from '../enums/media.enums';
@@ -115,6 +115,16 @@ export class MediaService {
     const media = await this.mediaRepo.findOne({ where: { id } });
     if (!media) throw new NotFoundException('Media not found');
     return media;
+  }
+
+  /**
+   * Batch lookup by id (eager `variants` included). Missing ids are simply
+   * absent from the result — callers map them to null, matching the
+   * `findOne(...).catch(() => null)` pattern but in a single query.
+   */
+  async findManyByIds(ids: string[]): Promise<Media[]> {
+    if (!ids.length) return [];
+    return this.mediaRepo.find({ where: { id: In(ids) } });
   }
 
   async updateAlt(id: string, altText?: string): Promise<Media> {

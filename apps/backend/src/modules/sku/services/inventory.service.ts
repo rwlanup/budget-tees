@@ -6,7 +6,10 @@ import { Sku } from '../entities/sku.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
 import { emitNotification } from '../../notification/notification-event';
-import { NotificationActorType, NotificationType } from '../../notification/enums/notification.enums';
+import {
+  NotificationActorType,
+  NotificationType,
+} from '../../notification/enums/notification.enums';
 
 export interface MovementRef {
   refType?: string;
@@ -76,9 +79,17 @@ export class InventoryService {
     });
   }
 
-  async adjust(skuId: string, opts: { delta?: number; setTo?: number; reason: string; by?: string }) {
-    let lowStock: { id: string; productId: string; productName: string; code: string; available: number } | null =
-      null;
+  async adjust(
+    skuId: string,
+    opts: { delta?: number; setTo?: number; reason: string; by?: string },
+  ) {
+    let lowStock: {
+      id: string;
+      productId: string;
+      productName: string;
+      code: string;
+      available: number;
+    } | null = null;
     const sku = await this.run(undefined, async (m) => {
       const sku = await this.lock(m, skuId);
       const prevAvailable = sku.stock - sku.reserved;
@@ -93,7 +104,11 @@ export class InventoryService {
       });
       const newAvailable = sku.stock - sku.reserved;
       // Only when stock *crosses* into low — not on every adjust of an already-low SKU.
-      if (sku.isActive && newAvailable <= sku.lowStockThreshold && prevAvailable > sku.lowStockThreshold) {
+      if (
+        sku.isActive &&
+        newAvailable <= sku.lowStockThreshold &&
+        prevAvailable > sku.lowStockThreshold
+      ) {
         lowStock = {
           id: sku.id,
           productId: sku.productId,

@@ -55,7 +55,7 @@ export class AuthService {
     if (user.status === UserStatus.PENDING) {
       throw new ForbiddenException({ code: 'EMAIL_NOT_VERIFIED', message: 'Email not verified' });
     }
-    if (user.status !== UserStatus.ACTIVE) {
+    if (user.status !== UserStatus.ACTIVE && user.status !== UserStatus.DEACTIVATED) {
       throw new ForbiddenException({ code: 'ACCOUNT_DISABLED', message: 'Account is disabled' });
     }
 
@@ -66,7 +66,8 @@ export class AuthService {
   async refresh(rawToken: string, meta: RequestMeta) {
     const { userId, refresh } = await this.tokens.rotateRefreshToken(rawToken, meta);
     const user = await this.users.findById(userId);
-    if (user.status !== UserStatus.ACTIVE) throw new UnauthorizedException('Account is not active');
+    if (user.status !== UserStatus.ACTIVE && user.status !== UserStatus.DEACTIVATED)
+      throw new UnauthorizedException('Account is not active');
     return {
       accessToken: this.tokens.signAccessToken({ sub: user.id, roleId: user.roleId }),
       expiresIn: this.tokens.accessTtlSeconds(),

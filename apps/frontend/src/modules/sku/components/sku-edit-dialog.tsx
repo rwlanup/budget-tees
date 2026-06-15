@@ -30,32 +30,14 @@ import { ApiError } from '@/lib/api/client';
 import { updateSkuSchema, type UpdateSkuInput } from '../schemas';
 import { useUpdateSku } from '../queries';
 import type { Sku } from '../types';
+import { SkuNameField, SkuPriceFields } from './sku-form-fields';
+import { numericFieldProps } from '@/lib/form-utils';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   productId: string;
   sku: Sku | null;
-}
-
-function numProps(
-  field: {
-    value: unknown;
-    onChange: (v: unknown) => void;
-    name: string;
-    onBlur: () => void;
-    ref: React.Ref<HTMLInputElement>;
-  },
-  opts: { nullable?: boolean } = {},
-) {
-  return {
-    name: field.name,
-    ref: field.ref,
-    onBlur: field.onBlur,
-    value: field.value === null || field.value === undefined ? '' : String(field.value),
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-      field.onChange(e.target.value === '' ? (opts.nullable ? null : 0) : Number(e.target.value)),
-  };
 }
 
 export function SkuEditDialog({ open, onOpenChange, productId, sku }: Props) {
@@ -133,24 +115,7 @@ export function SkuEditDialog({ open, onOpenChange, productId, sku }: Props) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <FormError messages={formError} />
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Variant name</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ''}
-                      placeholder="Auto: product + selected values"
-                      autoComplete="off"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <SkuNameField control={form.control} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
@@ -181,59 +146,7 @@ export function SkuEditDialog({ open, onOpenChange, productId, sku }: Props) {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={0} step="0.01" {...numProps(field)} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="compareAtPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Compare-at</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        {...numProps(field, { nullable: true })}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="costPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        {...numProps(field, { nullable: true })}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <SkuPriceFields control={form.control} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
@@ -243,7 +156,7 @@ export function SkuEditDialog({ open, onOpenChange, productId, sku }: Props) {
                   <FormItem>
                     <FormLabel>Low-stock at</FormLabel>
                     <FormControl>
-                      <Input type="number" min={0} {...numProps(field)} />
+                      <Input type="number" min={0} {...numericFieldProps(field)} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -260,7 +173,7 @@ export function SkuEditDialog({ open, onOpenChange, productId, sku }: Props) {
                         type="number"
                         min={0}
                         placeholder="None"
-                        {...numProps(field, { nullable: true })}
+                        {...numericFieldProps(field, { nullable: true })}
                       />
                     </FormControl>
                     <FormMessage />

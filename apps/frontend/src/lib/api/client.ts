@@ -91,7 +91,13 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   if (idempotencyKey) finalHeaders['Idempotency-Key'] = idempotencyKey;
   if (auth) {
     const token = useAuthStore.getState().accessToken;
-    if (token) finalHeaders['Authorization'] = `Bearer ${token}`;
+    if (token) {
+      finalHeaders['Authorization'] = `Bearer ${token}`;
+    } else {
+      await refreshTokens();
+      const newToken = useAuthStore.getState().accessToken;
+      if (newToken) finalHeaders['Authorization'] = `Bearer ${newToken}`;
+    }
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {

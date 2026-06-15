@@ -1,5 +1,14 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { StockMovementType } from '../enums/stock-movement-type.enum';
+import { Sku } from './sku.entity';
 
 @Entity('stock_movements')
 export class StockMovement {
@@ -9,6 +18,10 @@ export class StockMovement {
   @Index()
   @Column({ type: 'uuid' })
   skuId: string;
+
+  @ManyToOne(() => Sku, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'skuId' })
+  sku: Sku;
 
   @Column({ type: 'enum', enum: StockMovementType })
   type: StockMovementType;

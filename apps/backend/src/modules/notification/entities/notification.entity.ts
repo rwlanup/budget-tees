@@ -1,6 +1,10 @@
 import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { NotificationActorType, NotificationRecipientType, NotificationType } from '../enums/notification.enums';
+import {
+  NotificationActorType,
+  NotificationRecipientType,
+  NotificationType,
+} from '../enums/notification.enums';
 
 /**
  * A per-recipient notification row. Admin notifications fan out to one row per eligible

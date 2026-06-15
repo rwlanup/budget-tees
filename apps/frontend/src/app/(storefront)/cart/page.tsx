@@ -73,7 +73,7 @@ export default function CartPage() {
               >
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <Link
-                    href={`/product/${line.productId}`}
+                    href={`/product/${line.productId}?sku=${line.skuId}`}
                     className="shrink-0"
                     aria-label={line.productName}
                   >
@@ -85,7 +85,7 @@ export default function CartPage() {
                   </Link>
                   <div className="min-w-0 flex-1">
                     <Link
-                      href={`/product/${line.productId}`}
+                      href={`/product/${line.productId}?sku=${line.skuId}`}
                       className={cn(
                         'font-medium transition-colors hover:text-brand',
                         line.unavailable && 'text-muted-foreground',
@@ -93,26 +93,28 @@ export default function CartPage() {
                     >
                       {line.productName}
                     </Link>
-                  <div className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="tabular-nums">{formatCurrency(line.unitPrice, currency)}</span>
-                    {line.onSale && (
-                      <Badge variant="success">
-                        <Tag className="size-3" aria-hidden />
-                        Sale
-                      </Badge>
-                    )}
-                  </div>
-                  {line.unavailable ? (
-                    <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
-                      <TriangleAlert className="size-3.5" aria-hidden />
-                      No longer available — remove to checkout
-                    </p>
-                  ) : !line.inStock ? (
-                    <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-warning-foreground">
-                      <TriangleAlert className="size-3.5 text-warning" aria-hidden />
-                      Only {line.available} left — reduce quantity
-                    </p>
-                  ) : null}
+                    <div className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="tabular-nums">
+                        {formatCurrency(line.unitPrice, currency)}
+                      </span>
+                      {line.onSale && (
+                        <Badge variant="success">
+                          <Tag className="size-3" aria-hidden />
+                          Sale
+                        </Badge>
+                      )}
+                    </div>
+                    {line.unavailable ? (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
+                        <TriangleAlert className="size-3.5" aria-hidden />
+                        No longer available — remove to checkout
+                      </p>
+                    ) : !line.inStock ? (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-warning-foreground">
+                        <TriangleAlert className="size-3.5 text-warning" aria-hidden />
+                        Only {line.available} left — reduce quantity
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 

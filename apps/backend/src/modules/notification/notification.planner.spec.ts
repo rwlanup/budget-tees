@@ -13,7 +13,11 @@ import { NotificationRecipientType, NotificationType } from './enums/notificatio
 
 test('ORDER_PLACED notifies all admins, never the placing customer', () => {
   const plan = planNotifications(
-    { type: NotificationType.ORDER_PLACED, actorId: 'cust1', order: { id: 'o1', orderNumber: 'BT-1', userId: 'cust1' } },
+    {
+      type: NotificationType.ORDER_PLACED,
+      actorId: 'cust1',
+      order: { id: 'o1', orderNumber: 'BT-1', userId: 'cust1' },
+    },
     ['adminA', 'adminB'],
   );
   assert.equal(plan.length, 2);
@@ -24,7 +28,11 @@ test('ORDER_PLACED notifies all admins, never the placing customer', () => {
 
 test('self-notification is suppressed (acting admin excluded)', () => {
   const plan = planNotifications(
-    { type: NotificationType.ORDER_PLACED, actorId: 'adminA', order: { id: 'o1', orderNumber: 'BT-1', userId: 'cust1' } },
+    {
+      type: NotificationType.ORDER_PLACED,
+      actorId: 'adminA',
+      order: { id: 'o1', orderNumber: 'BT-1', userId: 'cust1' },
+    },
     ['adminA', 'adminB'],
   );
   assert.deepEqual(
@@ -79,7 +87,13 @@ test('return status update routes the customer to the owning order', () => {
     {
       type: NotificationType.RETURN_STATUS_UPDATED,
       actorId: 'adminA',
-      return: { id: 'r1', returnNumber: 'RET-1', userId: 'cust1', status: 'APPROVED', orderNumber: 'BT-1' },
+      return: {
+        id: 'r1',
+        returnNumber: 'RET-1',
+        userId: 'cust1',
+        status: 'APPROVED',
+        orderNumber: 'BT-1',
+      },
     },
     [],
   );
@@ -89,7 +103,11 @@ test('return status update routes the customer to the owning order', () => {
 
 test('no eligible admins -> no notifications', () => {
   const plan = planNotifications(
-    { type: NotificationType.RETURN_CREATED, actorId: 'cust1', return: { id: 'r1', returnNumber: 'RET-1', userId: 'cust1' } },
+    {
+      type: NotificationType.RETURN_CREATED,
+      actorId: 'cust1',
+      return: { id: 'r1', returnNumber: 'RET-1', userId: 'cust1' },
+    },
     [],
   );
   assert.equal(plan.length, 0);

@@ -45,8 +45,7 @@ const C = {
   // Bricolage Grotesque (display) + Inter (body) with web-safe fallbacks.
   fontHeading:
     "'Bricolage Grotesque','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",
-  fontBody:
-    "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",
+  fontBody: "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",
 };
 
 /**
@@ -235,8 +234,7 @@ export class TemplateRenderer {
 
   private html(b: Block): string {
     // brand is the default accent moment; success/danger remap functionally.
-    const accent =
-      b.accent === 'success' ? C.success : b.accent === 'danger' ? C.danger : C.brand;
+    const accent = b.accent === 'success' ? C.success : b.accent === 'danger' ? C.danger : C.brand;
     const intro = b.intro
       .filter(Boolean)
       .map(

@@ -1,11 +1,22 @@
 'use client';
 
+import { type Control, type FieldValues, type Path } from 'react-hook-form';
 import { MultiSelectField, type MultiSelectOption } from '@/components/shared/multi-select-field';
-import { FormItem, FormLabel } from '@/components/ui/form';
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { numericFieldProps } from '@/lib/form-utils';
 import { useProductOptions } from '@/modules/product/queries';
 import { useCategoryTree } from '@/modules/category/queries';
 import { flattenTree } from '@/modules/category/types';
-import type { SaleScope } from '../types';
+import type { SaleScope, SaleType } from '../types';
 
 /** ISO datetime → value for <input type="datetime-local"> (local time). */
 export function isoToLocalInput(iso: string): string {
@@ -17,6 +28,118 @@ export function isoToLocalInput(iso: string): string {
 
 export function localInputToIso(local: string): string {
   return local ? new Date(local).toISOString() : '';
+}
+
+/** Discount value (label/step driven by sale type). Shared by create + edit. */
+export function SaleValueField<T extends FieldValues>({
+  control,
+  saleType,
+}: {
+  control: Control<T>;
+  saleType: SaleType;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={'value' as Path<T>}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{saleType === 'PERCENTAGE' ? 'Percent off' : 'Amount off'}</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min={0}
+              step={saleType === 'PERCENTAGE' ? 1 : 0.01}
+              {...numericFieldProps(field)}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/** Max discount cap (nullable). Optional helper `description` (create shows "For %"). */
+export function SaleMaxCapField<T extends FieldValues>({
+  control,
+  description,
+}: {
+  control: Control<T>;
+  description?: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={'maxDiscountAmount' as Path<T>}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Max cap</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="None"
+              {...numericFieldProps(field, { nullable: true })}
+            />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function SaleScheduleFields<T extends FieldValues>({ control }: { control: Control<T> }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <FormField
+        control={control}
+        name={'startsAt' as Path<T>}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Starts</FormLabel>
+            <FormControl>
+              <Input type="datetime-local" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name={'endsAt' as Path<T>}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Ends</FormLabel>
+            <FormControl>
+              <Input type="datetime-local" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+}
+
+export function SaleActiveToggle<T extends FieldValues>({ control }: { control: Control<T> }) {
+  return (
+    <FormField
+      control={control}
+      name={'isActive' as Path<T>}
+      render={({ field }) => (
+        <FormItem className="flex items-center gap-3 space-y-0">
+          <FormControl>
+            <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+          </FormControl>
+          <FormLabel className="!mt-0">Active</FormLabel>
+        </FormItem>
+      )}
+    />
+  );
 }
 
 /** Scope-dependent target pickers (products / categories / exclusions). */

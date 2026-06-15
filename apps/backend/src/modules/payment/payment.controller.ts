@@ -63,7 +63,8 @@ export class PaymentWebhookController {
   @Public()
   async esewa(@Query() query: Record<string, unknown>, @Res() res: Response) {
     const base = this.config.get<string>('payment.websiteUrl') ?? 'http://localhost:3000';
-    const failedOrderParam = typeof query.order === 'string' ? `&order=${encodeURIComponent(query.order)}` : '';
+    const failedOrderParam =
+      typeof query.order === 'string' ? `&order=${encodeURIComponent(query.order)}` : '';
     let url = `${base}/checkout/result?status=failed${failedOrderParam}`;
     try {
       const result = await this.payments.handleCallback(query);

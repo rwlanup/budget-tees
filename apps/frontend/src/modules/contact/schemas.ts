@@ -1,7 +1,5 @@
 import { z } from 'zod';
-
-/** International-friendly phone: digits, spaces, +, -, parens; 7–20 chars. Mirrors backend regex. */
-const PHONE_REGEX = /^\+?[\d\s().-]{7,20}$/;
+import { isValidPhoneNumber } from 'react-phone-number-input';
 
 export const CONTACT_TOPICS = [
   'ORDER',
@@ -19,7 +17,11 @@ export const contactMessageSchema = z.object({
   firstName: z.string().min(1, 'Required').max(100),
   lastName: z.string().min(1, 'Required').max(100),
   email: z.email('Enter a valid email address').max(180),
-  phone: z.string().regex(PHONE_REGEX, 'Enter a valid phone number').optional().or(z.literal('')),
+  phone: z
+    .string()
+    .refine((v) => !v || isValidPhoneNumber(v), 'Enter a valid phone number')
+    .optional()
+    .or(z.literal('')),
   topic: z.enum(CONTACT_TOPICS, { message: 'Select a topic' }),
   message: z.string().min(10, 'Please enter at least 10 characters').max(4000),
 });

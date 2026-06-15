@@ -132,7 +132,7 @@ export function ProductsTable() {
           showAll
         />
         <Select value={brandId ?? ALL} onValueChange={(v) => setParams({ brandId: v, page: 1 })}>
-          <SelectTrigger aria-label="Filter by brand">
+          <SelectTrigger className="w-full" aria-label="Filter by brand">
             <SelectValue placeholder="Brand" />
           </SelectTrigger>
           <SelectContent>
@@ -145,7 +145,7 @@ export function ProductsTable() {
           </SelectContent>
         </Select>
         <Select value={status ?? ALL} onValueChange={(v) => setParams({ status: v, page: 1 })}>
-          <SelectTrigger aria-label="Filter by status">
+          <SelectTrigger className="w-full" aria-label="Filter by status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

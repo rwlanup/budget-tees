@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { authKeys } from '@/modules/auth/queries';
 import { useAuthStore, type AuthUser } from '@/lib/auth/auth-store';
 import { addressApi, profileApi, type AddressBody } from './api';
@@ -50,6 +51,24 @@ export function useUpdateProfile() {
     onSuccess: (user: AuthUser) => {
       useAuthStore.getState().setUser(user);
       qc.setQueryData(authKeys.me, user);
+    },
+  });
+}
+
+/**
+ * Self-service account deactivation. The backend marks the account DEACTIVATED;
+ * the session is then dead (the JWT guard rejects non-active users), so we clear
+ * all local state and send the user to sign-in. Signing back in reactivates it.
+ */
+export function useDeactivateAccount() {
+  const qc = useQueryClient();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: () => profileApi.deactivate(),
+    onSuccess: () => {
+      useAuthStore.getState().clear();
+      qc.clear();
+      router.replace('/sign-in');
     },
   });
 }

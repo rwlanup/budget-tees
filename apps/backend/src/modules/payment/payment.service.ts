@@ -308,7 +308,11 @@ export class PaymentService {
   }
 
   /** Notify the customer + payment-managing admins of a payment status change. */
-  private emitPaymentNotification(order: Order | null, paymentStatus: string, actorId?: string): void {
+  private emitPaymentNotification(
+    order: Order | null,
+    paymentStatus: string,
+    actorId?: string,
+  ): void {
     if (!order) return;
     emitNotification(this.events, {
       type: NotificationType.PAYMENT_STATUS_UPDATED,

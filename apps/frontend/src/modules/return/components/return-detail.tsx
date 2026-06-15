@@ -115,30 +115,30 @@ export function ReturnDetail({ id }: { id: string }) {
                             ? Object.values(ex.variant).join(' / ')
                             : '';
                         return (
-                        <TableRow key={it.id}>
-                          <TableCell className="font-medium">
-                            {itemName(it.orderItemId)}
-                            {request.resolutionType === 'EXCHANGE' && ex && (
-                              <span className="mt-1 flex items-center gap-1">
-                                <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
-                                {ex.productName}
-                                {exVariant ? ` · ${exVariant}` : ''}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{it.quantity}</TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {it.conditionOnReceipt ? titleCase(it.conditionOnReceipt) : '—'}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {it.restock ? 'Yes' : 'No'}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {it.lineRefundAmount != null
-                              ? formatCurrency(it.lineRefundAmount)
-                              : '—'}
-                          </TableCell>
-                        </TableRow>
+                          <TableRow key={it.id}>
+                            <TableCell className="font-medium">
+                              {itemName(it.orderItemId)}
+                              {request.resolutionType === 'EXCHANGE' && ex && (
+                                <span className="mt-1 flex items-center gap-1">
+                                  <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
+                                  {ex.productName}
+                                  {exVariant ? ` · ${exVariant}` : ''}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">{it.quantity}</TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              {it.conditionOnReceipt ? titleCase(it.conditionOnReceipt) : '—'}
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              {it.restock ? 'Yes' : 'No'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {it.lineRefundAmount != null
+                                ? formatCurrency(it.lineRefundAmount)
+                                : '—'}
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
                     </TableBody>

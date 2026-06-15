@@ -1,9 +1,7 @@
-import { IsEmail, IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, Length } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
+import { IsAllowedPhoneNumber } from '../../../common/decorators/is-allowed-phone-number.decorator';
 import { ContactStatus, ContactTopic } from '../enums/contact.enums';
-
-/** International-friendly phone: digits, spaces, +, -, parens; 7–20 chars. */
-const PHONE_REGEX = /^\+?[\d\s().-]{7,20}$/;
 
 export class CreateContactMessageDto {
   @IsString()
@@ -19,8 +17,7 @@ export class CreateContactMessageDto {
   email: string;
 
   @IsOptional()
-  @IsString()
-  @Matches(PHONE_REGEX, { message: 'Enter a valid phone number' })
+  @IsAllowedPhoneNumber()
   phone?: string;
 
   @IsEnum(ContactTopic)

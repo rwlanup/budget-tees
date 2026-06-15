@@ -20,21 +20,34 @@ export class FeaturedProductService {
   /** Public: active featured entries whose product is still published, priced. */
   async listPublic() {
     const rows = await this.repo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
+
+    // Batch the per-row product, default-SKU and sale lookups (was ~N queries/row).
+    const products = await this.products.findPublishedByIds(rows.map((r) => r.productId));
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    const skuMap = new Map(
+      (
+        await this.skus.findByIds(
+          products.map((p) => p.defaultSkuId).filter((id): id is string => !!id),
+        )
+      ).map((s) => [s.id, s]),
+    );
+    const pricer = await this.sales.buildPricer(
+      products.map((p) => ({ id: p.id, categoryId: p.categoryId })),
+    );
+
     const items: Array<Record<string, unknown>> = [];
     for (const row of rows) {
-      const product = await this.products.findOneByIdOrSlug(row.productId, true).catch(() => null);
+      const product = productMap.get(row.productId);
       if (!product) continue;
       let basePrice = 0;
       let salePrice = 0;
       let onSale = false;
-      if (product.defaultSkuId) {
-        const sku = await this.skus.findOne(product.defaultSkuId).catch(() => null);
-        if (sku) {
-          basePrice = sku.price;
-          const resolved = await this.sales.resolveForProduct(product.id, sku.price);
-          salePrice = resolved.salePrice;
-          onSale = resolved.onSale;
-        }
+      const sku = product.defaultSkuId ? skuMap.get(product.defaultSkuId) : undefined;
+      if (sku) {
+        basePrice = sku.price;
+        const resolved = pricer.price(product.id, sku.price);
+        salePrice = resolved.salePrice;
+        onSale = resolved.onSale;
       }
       items.push({
         productId: product.id,

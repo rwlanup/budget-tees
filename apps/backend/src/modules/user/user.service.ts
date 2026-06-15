@@ -126,6 +126,19 @@ export class UserService {
     return this.findById(userId);
   }
 
+  /**
+   * Self-service deactivation: marks the account DEACTIVATED. Nothing is deleted —
+   * the account is reactivated automatically on the next successful login
+   * (`setLastLogin` flips status back to ACTIVE).
+   */
+  async deactivate(id: string): Promise<void> {
+    const user = await this.findById(id);
+    await this.assertNotLastAdminChange(user, undefined);
+    if (user.status === UserStatus.DEACTIVATED) return;
+    user.status = UserStatus.DEACTIVATED;
+    await this.repo.save(user);
+  }
+
   /** Soft-delete + anonymize PII while preserving order history. */
   async softDeleteAndAnonymize(id: string): Promise<void> {
     const user = await this.findById(id);
@@ -153,7 +166,7 @@ export class UserService {
   }
 
   async setLastLogin(userId: string): Promise<void> {
-    await this.repo.update(userId, { lastLoginAt: new Date() });
+    await this.repo.update(userId, { lastLoginAt: new Date(), status: UserStatus.ACTIVE });
   }
 
   /** Guard: block actions that would remove the last active admin. */

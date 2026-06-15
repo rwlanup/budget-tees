@@ -9,11 +9,12 @@ import {
   Length,
   ValidateNested,
 } from 'class-validator';
+import { IsAllowedPhoneNumber } from '../../../common/decorators/is-allowed-phone-number.decorator';
 import { FulfillmentMethod, PaymentMethod } from '../enums/order.enums';
 
 export class AddressInputDto {
   @IsString() @Length(1, 120) recipientName: string;
-  @IsString() @Length(5, 20) phone: string;
+  @IsAllowedPhoneNumber() phone: string;
   @IsOptional() @IsEmail() email?: string;
   @IsString() @Length(1, 180) line1: string;
   @IsOptional() @IsString() @Length(0, 180) line2?: string;
@@ -41,7 +42,7 @@ export class CheckoutDto {
   @IsOptional() @IsUUID() pickupLocationId?: string;
 
   @IsEmail() contactEmail: string;
-  @IsString() @Length(5, 20) contactPhone: string;
+  @IsAllowedPhoneNumber() contactPhone: string;
 
   @IsOptional() @IsString() @Length(3, 40) couponCode?: string;
   @IsOptional() @IsString() @Length(0, 500) customerNote?: string;

@@ -19,5 +19,5 @@ Storefront "Contact us" support messages. Anyone (guest or authenticated custome
 
 ## Dependencies
 
-- Depends on: Auth (current user + permission guard). No FK to users (kept loose via nullable `userId`).
+- Depends on: Auth (current user + permission guard). `userId` is a nullable FK to `users` (`ON DELETE SET NULL`, migration `…030`) — null for guests; a deleted user nulls it but keeps the message.
 - Depended on by: storefront `/contact` page (public), admin `/admin/contact-messages`.

@@ -15,12 +15,14 @@ export function AdminNavList({ onNavigate }: { onNavigate?: () => void }) {
   const { data: lowStock } = useLowStockCount();
   const { data: pendingOrders } = useOrdersPendingCount();
   const { data: pendingContact } = useContactPendingCount();
-  const badgeCounts: Record<NonNullable<(typeof adminNav)[number]['items'][number]['badge']>, number> =
-    {
-      'low-stock': lowStock?.count ?? 0,
-      'pending-orders': pendingOrders?.count ?? 0,
-      'pending-contact': pendingContact?.count ?? 0,
-    };
+  const badgeCounts: Record<
+    NonNullable<(typeof adminNav)[number]['items'][number]['badge']>,
+    number
+  > = {
+    'low-stock': lowStock?.count ?? 0,
+    'pending-orders': pendingOrders?.count ?? 0,
+    'pending-contact': pendingContact?.count ?? 0,
+  };
 
   return (
     <nav className="flex flex-col gap-6 px-3 py-5" aria-label="Admin navigation">

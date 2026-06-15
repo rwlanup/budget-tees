@@ -1,16 +1,17 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
+import { numeric } from '../../../common/utils/numeric-transformer';
+import { TaxClass } from './tax-class.entity';
 
 @Entity('tax_rates')
 @Index('uq_tax_rate', ['taxClassId', 'countryCode'], { unique: true })
 export class TaxRate extends BaseEntity {
   @Column({ type: 'uuid' })
   taxClassId: string;
+
+  @ManyToOne(() => TaxClass, (tc) => tc.rates, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'taxClassId' })
+  taxClass: TaxClass;
 
   @Column({ type: 'varchar', length: 60 })
   name: string;

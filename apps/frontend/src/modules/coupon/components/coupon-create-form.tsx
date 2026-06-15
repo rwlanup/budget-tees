@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -31,7 +30,15 @@ import { ApiError } from '@/lib/api/client';
 import { createCouponSchema, type CreateCouponInput } from '../schemas';
 import { useCreateCoupon } from '../queries';
 import { COUPON_APPLIES_TO, COUPON_TYPES, type CouponAppliesTo, type CouponType } from '../types';
-import { CouponTargets, localInputToIso } from './coupon-form-fields';
+import {
+  CouponDescriptionField,
+  CouponLimitFields,
+  CouponMoneyFields,
+  CouponScheduleFields,
+  CouponTargets,
+  CouponToggleFields,
+  localInputToIso,
+} from './coupon-form-fields';
 
 const TYPE_LABEL: Record<CouponType, string> = {
   PERCENTAGE: 'Percentage',
@@ -43,24 +50,6 @@ const SCOPE_LABEL: Record<CouponAppliesTo, string> = {
   PRODUCTS: 'Specific products',
   CATEGORIES: 'Categories',
 };
-
-/** Bind an integer/decimal nullable field to an input. */
-function nullableNum(field: {
-  value: unknown;
-  onChange: (v: unknown) => void;
-  name: string;
-  onBlur: () => void;
-  ref: React.Ref<HTMLInputElement>;
-}) {
-  return {
-    name: field.name,
-    ref: field.ref,
-    onBlur: field.onBlur,
-    value: field.value === null || field.value === undefined ? '' : String(field.value),
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-      field.onChange(e.target.value === '' ? null : Number(e.target.value)),
-  };
-}
 
 export function CouponCreateForm() {
   const router = useRouter();
@@ -177,80 +166,14 @@ export function CouponCreateForm() {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value ?? ''} autoComplete="off" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <CouponDescriptionField control={form.control} />
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {!isFreeShipping && (
-                <FormField
-                  control={form.control}
-                  name="value"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{type === 'PERCENTAGE' ? 'Percent off' : 'Amount off'}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={type === 'PERCENTAGE' ? 1 : 0.01}
-                          {...nullableNum(field)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-              <FormField
-                control={form.control}
-                name="maxDiscountAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Max cap</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="minOrderAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Min order</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponMoneyFields
+              control={form.control}
+              showValue={!isFreeShipping}
+              valueLabel={type === 'PERCENTAGE' ? 'Percent off' : 'Amount off'}
+              valueStep={type === 'PERCENTAGE' ? 1 : 0.01}
+            />
 
             <FormField
               control={form.control}
@@ -296,100 +219,11 @@ export function CouponCreateForm() {
               </p>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="usageLimit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total usage limit</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        placeholder="Unlimited"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="usageLimitPerUser"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Per-user limit</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        placeholder="Unlimited"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponLimitFields control={form.control} />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="startsAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Starts (optional)</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} value={field.value ?? ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endsAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ends (optional)</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} value={field.value ?? ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponScheduleFields control={form.control} />
 
-            <div className="flex flex-wrap items-center gap-8">
-              <FormField
-                control={form.control}
-                name="firstOrderOnly"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 space-y-0">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">First order only</FormLabel>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 space-y-0">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Active</FormLabel>
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponToggleFields control={form.control} />
 
             <div className="flex items-center gap-3">
               <SubmitButton pending={create.isPending} pendingText="Creating…">

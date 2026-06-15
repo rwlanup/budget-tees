@@ -1,7 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { toast } from 'sonner';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -24,20 +22,11 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ApiError } from '@/lib/api/client';
 import { QuantityStepper } from '@/components/storefront/quantity-stepper';
-import type { Order, OrderItem } from '@/modules/order/types';
-import type { ReturnableItem } from '../api';
-import { useCreateReturn, useReturnable } from '../queries';
-import { createReturnSchema } from '../schemas';
+import type { Order } from '@/modules/order/types';
 import { RETURN_REASONS, type ResolutionType, type ReturnReason } from '../types';
 import { ExchangeVariantPicker } from './exchange-variant-picker';
-
-interface LineState {
-  checked: boolean;
-  quantity: number;
-  exchangeSkuId: string | null;
-}
+import { useCustomerReturn } from '../use-customer-return';
 
 export function CustomerReturnDialog({
   order,
@@ -48,90 +37,27 @@ export function CustomerReturnDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { data, isLoading, isError } = useReturnable(order.id, open);
-  const create = useCreateReturn(order.id);
-
-  const [resolutionType, setResolutionType] = React.useState<ResolutionType>('REFUND');
-  const [reason, setReason] = React.useState<ReturnReason>('DAMAGED');
-  const [note, setNote] = React.useState('');
-  const [lines, setLines] = React.useState<Record<string, LineState>>({});
-  const [formError, setFormError] = React.useState<string | null>(null);
-
-  // Reset whenever the dialog re-opens.
-  React.useEffect(() => {
-    if (open) {
-      setResolutionType('REFUND');
-      setReason('DAMAGED');
-      setNote('');
-      setLines({});
-      setFormError(null);
-    }
-  }, [open]);
-
-  // Eligible lines = returnable > 0, joined to the order item for product/sku details.
-  const rows: { ri: ReturnableItem; oi: OrderItem }[] = (data?.items ?? [])
-    .filter((ri) => ri.returnable > 0)
-    .map((ri) => ({ ri, oi: order.items.find((i) => i.id === ri.orderItemId) }))
-    .filter((r): r is { ri: ReturnableItem; oi: OrderItem } => !!r.oi);
-
-  const setLine = (orderItemId: string, patch: Partial<LineState>) =>
-    setLines((prev) => {
-      const existing = prev[orderItemId];
-      const base: LineState = existing ?? { checked: false, quantity: 1, exchangeSkuId: null };
-      const next: LineState = { ...base, ...patch };
-      // Bail out when nothing actually changed — the exchange picker re-emits its
-      // value via an effect on every render, so without this a no-op patch would
-      // trigger an endless setState→re-render loop ("Maximum update depth exceeded").
-      if (
-        existing &&
-        existing.checked === next.checked &&
-        existing.quantity === next.quantity &&
-        existing.exchangeSkuId === next.exchangeSkuId
-      ) {
-        return prev;
-      }
-      return { ...prev, [orderItemId]: next };
-    });
-
-  const submit = () => {
-    setFormError(null);
-    const items = rows
-      .filter((r) => lines[r.ri.orderItemId]?.checked)
-      .map((r) => {
-        const ls = lines[r.ri.orderItemId];
-        return {
-          orderItemId: r.ri.orderItemId,
-          quantity: ls.quantity,
-          exchangeSkuId:
-            resolutionType === 'EXCHANGE' ? (ls.exchangeSkuId ?? undefined) : undefined,
-        };
-      });
-
-    const parsed = createReturnSchema.safeParse({
-      resolutionType,
-      reason,
-      customerNote: note || undefined,
-      items,
-    });
-    if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? 'Please review the form.');
-      return;
-    }
-
-    create.mutate(parsed.data, {
-      onSuccess: (r) => {
-        toast.success(`Return ${r.returnNumber} requested`);
-        onOpenChange(false);
-      },
-      onError: (err) =>
-        setFormError(err instanceof ApiError ? err.messages[0] : 'Couldn’t submit return.'),
-    });
-  };
-
-  const eligible = data?.eligible && rows.length > 0;
+  const {
+    isLoading,
+    isError,
+    ineligible,
+    eligible,
+    rows,
+    lines,
+    setLine,
+    resolutionType,
+    setResolutionType,
+    reason,
+    setReason,
+    note,
+    setNote,
+    formError,
+    submit,
+    isPending,
+  } = useCustomerReturn(order, open, () => onOpenChange(false));
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !create.isPending && onOpenChange(o)}>
+    <Dialog open={open} onOpenChange={(o) => !isPending && onOpenChange(o)}>
       <DialogContent className="max-h-[90vh] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="border-b p-6">
           <DialogTitle>Request a return</DialogTitle>
@@ -152,7 +78,7 @@ export function CustomerReturnDialog({
             <p className="text-sm text-destructive">Couldn’t check return eligibility.</p>
           )}
 
-          {data && !eligible && (
+          {ineligible && (
             <p className="text-sm text-muted-foreground">
               No items on this order are eligible for return right now. The return window may have
               passed, or every item has already been returned.
@@ -293,11 +219,11 @@ export function CustomerReturnDialog({
         </div>
 
         <DialogFooter className="border-t p-6">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={create.isPending}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!eligible || create.isPending}>
-            {create.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          <Button onClick={submit} disabled={!eligible || isPending}>
+            {isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
             Submit return
           </Button>
         </DialogFooter>

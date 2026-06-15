@@ -10,12 +10,20 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { DataState } from '@/components/shared/data-state';
 import { MultiSelectField } from '@/components/shared/multi-select-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/client';
 import { useAttributes } from '@/modules/attribute/queries';
 import { isVariationType, type AttributeType } from '@/modules/attribute/types';
+import type { Product } from '@/modules/product/types';
 import { useProductAttributes, useSetAttributes } from '../queries';
 
 interface RowState {
@@ -24,7 +32,10 @@ interface RowState {
   isVariation: boolean;
 }
 
-export function ProductAttributesManager({ productId }: { productId: string }) {
+export function ProductAttributesManager({ product }: { product: Product }) {
+  const productId = product.id;
+  // SIMPLE products are single-SKU: no variation axes, one value per attribute.
+  const isSimple = product.type === 'SIMPLE';
   const { data: attributes, isLoading, isError, refetch } = useAttributes();
   const { data: assignment } = useProductAttributes(productId);
   const save = useSetAttributes(productId);
@@ -59,8 +70,8 @@ export function ProductAttributesManager({ productId }: { productId: string }) {
       .filter((a) => get(a.id).included)
       .map((a) => ({
         attributeId: a.id,
-        isVariation: get(a.id).isVariation,
-        valueIds: get(a.id).valueIds,
+        isVariation: isSimple ? false : get(a.id).isVariation,
+        valueIds: isSimple ? get(a.id).valueIds.slice(0, 1) : get(a.id).valueIds,
       }));
     save.mutate(payload, {
       onSuccess: () => toast.success('Attributes saved'),
@@ -74,10 +85,11 @@ export function ProductAttributesManager({ productId }: { productId: string }) {
       <CardContent className="space-y-4 pt-6">
         <Alert>
           <Info className="size-4" aria-hidden />
-          <AlertTitle>Attributes & variation axes</AlertTitle>
+          <AlertTitle>{isSimple ? 'Attributes' : 'Attributes & variation axes'}</AlertTitle>
           <AlertDescription>
-            Include attributes that apply to this product. Mark SELECT/MULTISELECT/COLOR attributes
-            as variation axes — those drive SKU generation in Variants.
+            {isSimple
+              ? 'Include attributes that apply to this product and pick a single value for each. Simple products have one variant, so there are no variation axes.'
+              : 'Include attributes that apply to this product. Mark SELECT/MULTISELECT/COLOR attributes as variation axes — those drive SKU generation in Variants.'}
           </AlertDescription>
         </Alert>
 
@@ -117,26 +129,46 @@ export function ProductAttributesManager({ productId }: { productId: string }) {
 
                         {row.included && (
                           <div className="space-y-3">
-                            <MultiSelectField
-                              options={valueOptions}
-                              value={row.valueIds}
-                              onChange={(v) => setRow(attr.id, { valueIds: v })}
-                              placeholder="Select values"
-                              emptyText="No values — add them in Attributes"
-                            />
-                            <label className="flex items-center gap-2 text-sm">
-                              <Switch
-                                checked={row.isVariation}
-                                disabled={!canVary}
-                                onCheckedChange={(v) => setRow(attr.id, { isVariation: v })}
-                              />
-                              Variation axis
-                              {!canVary && (
-                                <span className="text-xs text-muted-foreground">
-                                  (type not eligible)
-                                </span>
-                              )}
-                            </label>
+                            {isSimple ? (
+                              <Select
+                                value={row.valueIds[0] ?? ''}
+                                onValueChange={(v) => setRow(attr.id, { valueIds: [v] })}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select a value" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {valueOptions.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                      {o.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <>
+                                <MultiSelectField
+                                  options={valueOptions}
+                                  value={row.valueIds}
+                                  onChange={(v) => setRow(attr.id, { valueIds: v })}
+                                  placeholder="Select values"
+                                  emptyText="No values — add them in Attributes"
+                                />
+                                <label className="flex items-center gap-2 text-sm">
+                                  <Switch
+                                    checked={row.isVariation}
+                                    disabled={!canVary}
+                                    onCheckedChange={(v) => setRow(attr.id, { isVariation: v })}
+                                  />
+                                  Variation axis
+                                  {!canVary && (
+                                    <span className="text-xs text-muted-foreground">
+                                      (type not eligible)
+                                    </span>
+                                  )}
+                                </label>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>

@@ -64,12 +64,24 @@ export class InvoiceService {
     const FOOTER_Y = PAGE.h - 50;
 
     const currency = order.currency || 'NPR';
-    const nf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const nf = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
     const money = (n: number) => `${currency} ${nf.format(Number(n ?? 0))}`;
     const dateLong = (d: Date | string | null) =>
-      d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+      d
+        ? new Date(d).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })
+        : '—';
     const titleCase = (s: string) =>
-      s.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      s
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
     const paymentMethod = (m: string) =>
       ({ ESEWA: 'eSewa', COD: 'Cash on Delivery' })[m] ?? titleCase(m);
     const fulfillment = (f: string) =>
@@ -79,8 +91,16 @@ export class InvoiceService {
         return InvoiceService.PILL.green;
       if (
         [
-          'PENDING', 'PROCESSING', 'SHIPPED', 'READY_FOR_PICKUP', 'UNPAID', 'PARTIALLY_REFUNDED',
-          'REQUESTED', 'APPROVED', 'AWAITING_ITEMS', 'RECEIVED',
+          'PENDING',
+          'PROCESSING',
+          'SHIPPED',
+          'READY_FOR_PICKUP',
+          'UNPAID',
+          'PARTIALLY_REFUNDED',
+          'REQUESTED',
+          'APPROVED',
+          'AWAITING_ITEMS',
+          'RECEIVED',
         ].includes(s)
       )
         return InvoiceService.PILL.amber;
@@ -97,7 +117,9 @@ export class InvoiceService {
     });
     const chunks: Buffer[] = [];
     doc.on('data', (c: Buffer) => chunks.push(c));
-    const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+    const done = new Promise<Buffer>((resolve) =>
+      doc.on('end', () => resolve(Buffer.concat(chunks))),
+    );
 
     // ── small drawing helpers ──────────────────────────────────────────────
     const eyebrow = (label: string, x: number, y: number, color = C.faint, width?: number) => {
@@ -112,7 +134,9 @@ export class InvoiceService {
       doc.font('Helvetica-Bold').fontSize(8);
       const w = doc.widthOfString(up, { characterSpacing: 0.6 }) + 16;
       doc.roundedRect(rx - w, y, w, 16, 8).fill(style.bg);
-      doc.fillColor(style.fg).text(up, rx - w + 8, y + 4.3, { characterSpacing: 0.6, lineBreak: false });
+      doc
+        .fillColor(style.fg)
+        .text(up, rx - w + 8, y + 4.3, { characterSpacing: 0.6, lineBreak: false });
     };
     const hairline = (y: number) => {
       doc.moveTo(M, y).lineTo(right, y).lineWidth(0.5).strokeColor(C.line).stroke();
@@ -136,7 +160,11 @@ export class InvoiceService {
       .fillColor(C.brand)
       .font('Helvetica-Bold')
       .fontSize(16)
-      .text(initials, badge.x, badge.y + 13, { width: badge.s, align: 'center', characterSpacing: 0.5 });
+      .text(initials, badge.x, badge.y + 13, {
+        width: badge.s,
+        align: 'center',
+        characterSpacing: 0.5,
+      });
 
     const wmX = badge.x + badge.s + 14;
     doc
@@ -188,7 +216,11 @@ export class InvoiceService {
 
     const renderParty = (title: string, x: number, name: string, lines: string[]): number => {
       eyebrow(title, x, partyTop, C.faint);
-      doc.font('Helvetica-Bold').fontSize(11).fillColor(C.ink).text(name || '—', x, partyTop + 15, { width: partyW });
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(11)
+        .fillColor(C.ink)
+        .text(name || '—', x, partyTop + 15, { width: partyW });
       doc.font('Helvetica').fontSize(9.5).fillColor(C.muted);
       let yy = doc.y + 3;
       for (const l of lines) {
@@ -229,19 +261,31 @@ export class InvoiceService {
 
     // ── line items table ──────────────────────────────────────────────────────
     const COL = {
-      itemX: M, itemW: 250,
-      unitX: 305, unitW: 78, // right edge 383
-      qtyX: 393, qtyW: 47, // right edge 440
-      amtX: 447, amtW: right - 447, // right edge = content right
+      itemX: M,
+      itemW: 250,
+      unitX: 305,
+      unitW: 78, // right edge 383
+      qtyX: 393,
+      qtyW: 47, // right edge 440
+      amtX: 447,
+      amtW: right - 447, // right edge = content right
     };
     const drawTableHeader = () => {
       doc.roundedRect(M, y, contentW, 26, 6).fill(C.lineSoft);
       doc.font('Helvetica-Bold').fontSize(8).fillColor(C.muted);
       const ty = y + 9;
       doc.text('ITEM', COL.itemX + 12, ty, { characterSpacing: 1, lineBreak: false });
-      doc.text('UNIT PRICE', COL.unitX, ty, { width: COL.unitW, align: 'right', characterSpacing: 0.8 });
+      doc.text('UNIT PRICE', COL.unitX, ty, {
+        width: COL.unitW,
+        align: 'right',
+        characterSpacing: 0.8,
+      });
       doc.text('QTY', COL.qtyX, ty, { width: COL.qtyW, align: 'right', characterSpacing: 0.8 });
-      doc.text('AMOUNT', COL.amtX, ty, { width: COL.amtW - 12, align: 'right', characterSpacing: 0.8 });
+      doc.text('AMOUNT', COL.amtX, ty, {
+        width: COL.amtW - 12,
+        align: 'right',
+        characterSpacing: 0.8,
+      });
       y += 26 + 4;
     };
     const ensureRow = (h: number) => {
@@ -275,9 +319,13 @@ export class InvoiceService {
       ensureRow(rowH);
 
       const ty = y + 9;
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text(it.productName, COL.itemX + 12, ty, {
-        width: COL.itemW,
-      });
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(10)
+        .fillColor(C.ink)
+        .text(it.productName, COL.itemX + 12, ty, {
+          width: COL.itemW,
+        });
       if (sub)
         doc
           .font('Helvetica')
@@ -304,7 +352,11 @@ export class InvoiceService {
     const totalsW = 250;
     const tX = right - totalsW;
     const valW = 120;
-    const totalLine = (label: string, value: string, opts: { strong?: boolean; valColor?: string } = {}) => {
+    const totalLine = (
+      label: string,
+      value: string,
+      opts: { strong?: boolean; valColor?: string } = {},
+    ) => {
       doc
         .font(opts.strong ? 'Helvetica-Bold' : 'Helvetica')
         .fontSize(opts.strong ? 10.5 : 9.5)
@@ -320,9 +372,13 @@ export class InvoiceService {
     if (order.saleSavings > 0)
       totalLine('Sale savings', `- ${money(order.saleSavings)}`, { valColor: C.brand });
     if (order.discountTotal > 0)
-      totalLine(`Discount${order.couponCode ? ` (${order.couponCode})` : ''}`, `- ${money(order.discountTotal)}`, {
-        valColor: C.brand,
-      });
+      totalLine(
+        `Discount${order.couponCode ? ` (${order.couponCode})` : ''}`,
+        `- ${money(order.discountTotal)}`,
+        {
+          valColor: C.brand,
+        },
+      );
     totalLine('Shipping', order.shippingCost > 0 ? money(order.shippingCost) : 'Free');
 
     y += 6;
@@ -336,7 +392,11 @@ export class InvoiceService {
     doc
       .fontSize(15)
       .fillColor(C.brand)
-      .text(money(order.grandTotal), tX, y + 13, { width: totalsW - 16, align: 'right', lineBreak: false });
+      .text(money(order.grandTotal), tX, y + 13, {
+        width: totalsW - 16,
+        align: 'right',
+        lineBreak: false,
+      });
     y += gh + 8;
     doc
       .font('Helvetica-Oblique')
@@ -423,7 +483,10 @@ export class InvoiceService {
         .font('Helvetica')
         .fontSize(9)
         .fillColor(C.muted)
-        .text(`Thank you for shopping with ${storeName}.`, M, y + 12, { width: contentW, align: 'center' });
+        .text(`Thank you for shopping with ${storeName}.`, M, y + 12, {
+          width: contentW,
+          align: 'center',
+        });
     }
 
     // ── footer (every page) ──────────────────────────────────────────────────

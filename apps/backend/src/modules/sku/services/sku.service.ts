@@ -1,6 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 import { Sku, SkuSnapshot } from '../entities/sku.entity';
 import { SkuAttributeValue } from '../entities/sku-attribute-value.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
@@ -38,6 +43,12 @@ export class SkuService {
     return sku;
   }
 
+  /** Batch sibling of `findOne`: SKUs by id; missing ids are simply absent. */
+  findByIds(ids: string[]): Promise<Sku[]> {
+    if (!ids.length) return Promise.resolve([]);
+    return this.repo.find({ where: { id: In(ids) } });
+  }
+
   async comboOf(skuId: string): Promise<string[]> {
     const links = await this.savRepo.find({ where: { skuId } });
     return links.map((l) => l.attributeValueId).sort();
@@ -63,6 +74,7 @@ export class SkuService {
   }
 
   async create(productId: string, dto: CreateSkuDto): Promise<Sku> {
+    this.assertCompareAboveActualPrice(dto.compareAtPrice ?? null, dto.price ?? null);
     const product = await this.products.findOneByIdOrSlug(productId, false);
     await this.assertComboUnique(productId, dto.attributeValueIds);
     const code = dto.sku ?? (await this.generateCode(productId, dto.attributeValueIds));
@@ -132,6 +144,7 @@ export class SkuService {
       imageMediaId: dto.imageMediaId ?? sku.imageMediaId,
       isActive: dto.isActive ?? sku.isActive,
     });
+    this.assertCompareAboveActualPrice(sku.compareAtPrice, sku.price);
     if (dto.isDefault === true && !sku.isDefault) {
       await this.repo.update({ productId: sku.productId, isDefault: true }, { isDefault: false });
       sku.isDefault = true;
@@ -199,6 +212,13 @@ export class SkuService {
   }
 
   // ---- internals ----
+
+  /** compareAtPrice (when set) must exceed price (when set). */
+  private assertCompareAboveActualPrice(compareAtPrice: number | null, price: number | null): void {
+    if (compareAtPrice == null || price == null) return;
+    if (compareAtPrice <= price)
+      throw new UnprocessableEntityException('Compare at price must be greater than actual price');
+  }
 
   private async persistSku(
     productId: string,

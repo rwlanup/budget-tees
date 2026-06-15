@@ -4,6 +4,7 @@ import { In, QueryFailedError, Repository } from 'typeorm';
 import { Attribute } from '../entities/attribute.entity';
 import { AttributeValue } from '../entities/attribute-value.entity';
 import { slugify, uniqueSlug } from '../../../common/utils/slugify';
+import { isUuid } from '../../../common/utils/uuid';
 import {
   CreateAttributeDto,
   CreateAttributeValueDto,
@@ -141,8 +142,4 @@ export class AttributeService {
       return !!e && e.id !== excludeId;
     });
   }
-}
-
-function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }

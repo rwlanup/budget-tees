@@ -7,18 +7,18 @@ import {
   IsNumber,
   IsObject,
   IsOptional,
-  IsPhoneNumber,
   IsString,
   Length,
   Min,
 } from 'class-validator';
+import { IsAllowedPhoneNumber } from '../../../common/decorators/is-allowed-phone-number.decorator';
 import { AddressType, ShippingMethod } from '../enums/location.enums';
 
 export class CreateAddressDto {
   @IsEnum(AddressType) type: AddressType;
   @IsOptional() @IsString() @Length(0, 40) label?: string;
   @IsString() @Length(1, 120) recipientName: string;
-  @IsString() @IsPhoneNumber('NP') phone: string;
+  @IsAllowedPhoneNumber() phone: string;
   @IsOptional() @IsEmail() email?: string;
   @IsString() @Length(1, 180) line1: string;
   @IsOptional() @IsString() @Length(0, 180) line2?: string;
@@ -34,7 +34,7 @@ export class UpdateAddressDto {
   @IsOptional() @IsEnum(AddressType) type: AddressType;
   @IsOptional() @IsString() @Length(0, 40) label?: string;
   @IsOptional() @IsString() @Length(1, 120) recipientName?: string;
-  @IsOptional() @IsPhoneNumber('NP') phone?: string;
+  @IsOptional() @IsAllowedPhoneNumber() phone?: string;
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsString() @Length(1, 180) line1?: string;
   @IsOptional() @IsString() @Length(0, 180) line2?: string;
@@ -70,7 +70,7 @@ export class UpdateZoneDto {
 
 export class CreatePickupDto {
   @IsString() @Length(2, 120) name: string;
-  @IsOptional() @IsString() @Length(0, 20) phone?: string;
+  @IsOptional() @IsAllowedPhoneNumber() phone?: string;
   @IsOptional() @IsEmail() email?: string;
   @IsString() @Length(1, 180) line1: string;
   @IsString() @Length(1, 100) city: string;
@@ -85,7 +85,7 @@ export class CreatePickupDto {
 
 export class UpdatePickupDto {
   @IsOptional() @IsString() @Length(2, 120) name?: string;
-  @IsOptional() @IsString() @Length(0, 20) phone?: string;
+  @IsOptional() @IsAllowedPhoneNumber() phone?: string;
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsString() @Length(1, 180) line1?: string;
   @IsOptional() @IsString() @Length(1, 100) city?: string;

@@ -121,7 +121,7 @@ export function ProductCoreFields({ control }: { control: Control<CreateProductI
                 onValueChange={(v) => field.onChange(v === NONE ? null : v)}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                 </FormControl>
@@ -149,7 +149,7 @@ export function ProductCoreFields({ control }: { control: Control<CreateProductI
                 onValueChange={(v) => field.onChange(v === NONE ? null : v)}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Default" />
                   </SelectTrigger>
                 </FormControl>

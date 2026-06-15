@@ -17,6 +17,5 @@ export const notificationApi = {
   markSeen: (id: string) =>
     apiFetch<{ success: boolean }>(`/notifications/${id}/seen`, { method: 'PATCH' }),
 
-  markAllSeen: () =>
-    apiFetch<{ success: boolean }>('/notifications/seen-all', { method: 'PATCH' }),
+  markAllSeen: () => apiFetch<{ success: boolean }>('/notifications/seen-all', { method: 'PATCH' }),
 };

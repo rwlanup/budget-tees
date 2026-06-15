@@ -17,7 +17,7 @@ export function LowStockPreview() {
 
   return (
     <Card className="h-full">
-      <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 border-b pb-5">
+      <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 border-b pb-5">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Inventory
@@ -45,9 +45,9 @@ export function LowStockPreview() {
               >
                 <Link
                   href={`/admin/products/${sku.productId}?tab=variants`}
-                  className="font-mono text-sm transition-colors group-hover:text-brand"
+                  className="text-sm font-medium transition-colors group-hover:text-brand"
                 >
-                  {sku.sku}
+                  {sku.name}
                 </Link>
                 <Badge variant="warning" className="tabular-nums">
                   {skuAvailable(sku)} left

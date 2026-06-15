@@ -1,5 +1,6 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { User } from '../../user/entities/user.entity';
 import { ContactStatus, ContactTopic } from '../enums/contact.enums';
 
 /** A support message sent from the storefront contact form. `userId` = sender if authenticated. */
@@ -8,6 +9,10 @@ export class ContactMessage extends BaseEntity {
   @Index()
   @Column({ type: 'uuid', nullable: true })
   userId: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user: User | null;
 
   @Column({ type: 'varchar', length: 100 })
   firstName: string;

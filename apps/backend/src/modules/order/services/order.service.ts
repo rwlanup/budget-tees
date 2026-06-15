@@ -12,9 +12,13 @@ import { InventoryService } from '../../sku/services/inventory.service';
 import { CouponRedemptionService } from '../../coupon/coupon-redemption.service';
 import { ListOrdersQueryDto, UpdateOrderStatusDto, FulfillmentDto } from '../dto/order-admin.dto';
 import { paginate, PaginatedResult } from '../../../common/dto/pagination.dto';
+import { isUuid } from '../../../common/utils/uuid';
 import { emitEmail } from '../../../common/utils/emit-email';
 import { emitNotification } from '../../notification/notification-event';
-import { NotificationActorType, NotificationType } from '../../notification/enums/notification.enums';
+import {
+  NotificationActorType,
+  NotificationType,
+} from '../../notification/enums/notification.enums';
 
 const CANCELLABLE = [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING];
 const STOCK_COMMITTED = [OrderStatus.CONFIRMED, OrderStatus.PROCESSING];
@@ -268,7 +272,12 @@ export class OrderService {
     emitNotification(this.events, {
       type: NotificationType.ORDER_STATUS_UPDATED,
       actorType: NotificationActorType.SYSTEM,
-      order: { id: order.id, orderNumber: order.orderNumber, userId: order.userId, status: order.status },
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        userId: order.userId,
+        status: order.status,
+      },
     });
   }
 
@@ -286,7 +295,12 @@ export class OrderService {
       type: NotificationType.ORDER_STATUS_UPDATED,
       actorId: actorId ?? null,
       actorType: actorId ? NotificationActorType.ADMIN : NotificationActorType.SYSTEM,
-      order: { id: order.id, orderNumber: order.orderNumber, userId: order.userId, status: order.status },
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        userId: order.userId,
+        status: order.status,
+      },
     });
   }
 
@@ -302,10 +316,6 @@ export class OrderService {
     order.items = await mgr.getRepository(OrderItem).find({ where: { orderId } });
     return order;
   }
-}
-
-function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }
 
 /** Newest-first, non-mutating. */

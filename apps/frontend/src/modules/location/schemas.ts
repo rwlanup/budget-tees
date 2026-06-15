@@ -1,11 +1,16 @@
 import { z } from 'zod';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 
 const optionalEmail = z.union([z.literal(''), z.email('Enter a valid email')]).optional();
 
 /** Mirrors CreatePickupDto. openingHours handled as JSON text in the form. */
 export const pickupSchema = z.object({
   name: z.string().min(2, 'At least 2 characters').max(120),
-  phone: z.string().max(20).optional().or(z.literal('')),
+  phone: z
+    .string()
+    .refine((v) => !v || isValidPhoneNumber(v), 'Enter a valid phone number')
+    .optional()
+    .or(z.literal('')),
   email: optionalEmail,
   line1: z.string().min(1, 'Required').max(180),
   city: z.string().min(1, 'Required').max(100),

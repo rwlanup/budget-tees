@@ -14,9 +14,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,24 +27,16 @@ import { updateCouponSchema, type UpdateCouponInput } from '../schemas';
 import { useUpdateCoupon } from '../queries';
 import type { Coupon } from '../types';
 import type { UpdateCouponBody } from '../api';
-import { CouponTargets, isoToLocalInput, localInputToIso } from './coupon-form-fields';
-
-function nullableNum(field: {
-  value: unknown;
-  onChange: (v: unknown) => void;
-  name: string;
-  onBlur: () => void;
-  ref: React.Ref<HTMLInputElement>;
-}) {
-  return {
-    name: field.name,
-    ref: field.ref,
-    onBlur: field.onBlur,
-    value: field.value === null || field.value === undefined ? '' : String(field.value),
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-      field.onChange(e.target.value === '' ? null : Number(e.target.value)),
-  };
-}
+import {
+  CouponDescriptionField,
+  CouponLimitFields,
+  CouponMoneyFields,
+  CouponScheduleFields,
+  CouponTargets,
+  CouponToggleFields,
+  isoToLocalInput,
+  localInputToIso,
+} from './coupon-form-fields';
 
 export function CouponEditForm({ coupon }: { coupon: Coupon }) {
   const router = useRouter();
@@ -126,177 +116,20 @@ export function CouponEditForm({ coupon }: { coupon: Coupon }) {
               </span>
             </div>
 
-            <FormField
+            <CouponDescriptionField control={form.control} />
+
+            <CouponMoneyFields
               control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value ?? ''} autoComplete="off" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              showValue={!isFreeShipping}
+              valueLabel={coupon.type === 'PERCENTAGE' ? 'Percent off' : 'Amount off'}
+              valueStep={coupon.type === 'PERCENTAGE' ? 1 : 0.01}
             />
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {!isFreeShipping && (
-                <FormField
-                  control={form.control}
-                  name="value"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {coupon.type === 'PERCENTAGE' ? 'Percent off' : 'Amount off'}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={coupon.type === 'PERCENTAGE' ? 1 : 0.01}
-                          {...nullableNum(field)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-              <FormField
-                control={form.control}
-                name="maxDiscountAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Max cap</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="minOrderAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Min order</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="None"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponLimitFields control={form.control} />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="usageLimit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total usage limit</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        placeholder="Unlimited"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="usageLimitPerUser"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Per-user limit</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        placeholder="Unlimited"
-                        {...nullableNum(field)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponScheduleFields control={form.control} />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="startsAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Starts (optional)</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} value={field.value ?? ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endsAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ends (optional)</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} value={field.value ?? ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-8">
-              <FormField
-                control={form.control}
-                name="firstOrderOnly"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 space-y-0">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">First order only</FormLabel>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 space-y-0">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Active</FormLabel>
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CouponToggleFields control={form.control} />
 
             {coupon.appliesTo !== 'ALL' && (
               <>

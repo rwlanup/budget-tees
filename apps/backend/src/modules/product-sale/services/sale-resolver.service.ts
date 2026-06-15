@@ -18,6 +18,50 @@ export interface ResolvedPrice {
   saleEndsAt: Date | null;
 }
 
+/**
+ * Precomputed sale-matching context for a set of products. Built once by
+ * `SaleResolverService.buildPricer` (a fixed number of queries regardless of
+ * SKU count), it then resolves any number of SKU prices synchronously — the
+ * batch equivalent of calling `resolveForProduct` per SKU. The per-product
+ * scope matching and lowest-price-wins selection mirror `resolveForProduct`
+ * exactly, so output is identical.
+ */
+export class SalePricer {
+  constructor(
+    private readonly matchedByProduct: Map<string, Sale[]>,
+    private readonly candidatePrice: (sale: Sale, base: number) => number,
+  ) {}
+
+  price(productId: string, basePrice: number): ResolvedPrice {
+    const none: ResolvedPrice = {
+      basePrice,
+      salePrice: basePrice,
+      onSale: false,
+      sourceSaleId: null,
+      discountPct: 0,
+      saleEndsAt: null,
+    };
+    const sales = this.matchedByProduct.get(productId);
+    if (!sales?.length) return none;
+
+    let best = none;
+    for (const sale of sales) {
+      const salePrice = this.candidatePrice(sale, basePrice);
+      if (salePrice < best.salePrice) {
+        best = {
+          basePrice,
+          salePrice,
+          onSale: salePrice < basePrice,
+          sourceSaleId: sale.id,
+          discountPct: basePrice > 0 ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0,
+          saleEndsAt: sale.endsAt,
+        };
+      }
+    }
+    return best;
+  }
+}
+
 @Injectable()
 export class SaleResolverService {
   constructor(
@@ -99,6 +143,93 @@ export class SaleResolverService {
   }
 
   /**
+   * Batch counterpart to `resolveForProduct`: precompute, for the given products,
+   * which active sales match each — using a fixed number of queries (one
+   * `activeSales`, three link fetches, and one `descendantIds` CTE per
+   * category-scoped sale category) instead of the ~6 queries per product that
+   * `resolveForProduct` issues. Callers then price each SKU synchronously via
+   * the returned `SalePricer`.
+   *
+   * Matching is identical to `resolveForProduct`. CATEGORIES scope expands each
+   * sale's categories to self + descendants and matches the product's own
+   * `categoryId` against that set — equivalent to the resolver's
+   * lineage(self+ancestors) ∩ sale_categories (see `buildPriceSortExpression`).
+   */
+  async buildPricer(products: { id: string; categoryId: string }[]): Promise<SalePricer> {
+    const candidate = (sale: Sale, base: number) => this.candidatePrice(sale, base);
+    const active = await this.sales.activeSales();
+    if (!active.length || !products.length) return new SalePricer(new Map(), candidate);
+
+    const saleIds = active.map((s) => s.id);
+    const [productLinks, excludedLinks, categoryLinks] = await Promise.all([
+      this.spRepo.find({ where: { saleId: In(saleIds) } }),
+      this.sxRepo.find({ where: { saleId: In(saleIds) } }),
+      this.scRepo.find({ where: { saleId: In(saleIds) } }),
+    ]);
+    const productsBySale = this.groupSet(
+      productLinks,
+      (l) => l.saleId,
+      (l) => l.productId,
+    );
+    const excludedBySale = this.groupSet(
+      excludedLinks,
+      (l) => l.saleId,
+      (l) => l.productId,
+    );
+    const catsBySale = this.groupSet(
+      categoryLinks,
+      (l) => l.saleId,
+      (l) => l.categoryId,
+    );
+
+    const coveredBySale = new Map<string, Set<string>>();
+    for (const sale of active) {
+      if (sale.scope !== SaleScope.CATEGORIES) continue;
+      const baseCats = catsBySale.get(sale.id);
+      if (!baseCats?.size) continue;
+      const covered = new Set<string>(baseCats);
+      for (const cid of baseCats) {
+        for (const d of await this.categories.descendantIds(cid)) covered.add(d);
+      }
+      coveredBySale.set(sale.id, covered);
+    }
+
+    const matchedByProduct = new Map<string, Sale[]>();
+    for (const product of products) {
+      if (matchedByProduct.has(product.id)) continue;
+      const matched = active.filter((sale) => {
+        if (sale.scope === SaleScope.STORE_WIDE) {
+          return !excludedBySale.get(sale.id)?.has(product.id);
+        }
+        if (sale.scope === SaleScope.PRODUCTS) {
+          return !!productsBySale.get(sale.id)?.has(product.id);
+        }
+        return (
+          !!coveredBySale.get(sale.id)?.has(product.categoryId) &&
+          !excludedBySale.get(sale.id)?.has(product.id)
+        );
+      });
+      matchedByProduct.set(product.id, matched);
+    }
+    return new SalePricer(matchedByProduct, candidate);
+  }
+
+  private groupSet<T>(
+    rows: T[],
+    key: (r: T) => string,
+    val: (r: T) => string,
+  ): Map<string, Set<string>> {
+    const m = new Map<string, Set<string>>();
+    for (const r of rows) {
+      const k = key(r);
+      let set = m.get(k);
+      if (!set) m.set(k, (set = new Set<string>()));
+      set.add(val(r));
+    }
+    return m;
+  }
+
+  /**
    * Build a SQL expression (+ bound params) that computes the effective sale
    * price of a SKU in-database, mirroring `resolveForProduct` (active window,
    * scope matching, lowest-price-wins, cap/floor/round-2). Intended for storefront
@@ -128,9 +259,21 @@ export class SaleResolverService {
       for (const r of rows) (m.get(key(r)) ?? m.set(key(r), []).get(key(r))!).push(val(r));
       return m;
     };
-    const productsBySale = group(productLinks, (l) => l.saleId, (l) => l.productId);
-    const excludedBySale = group(excludedLinks, (l) => l.saleId, (l) => l.productId);
-    const catsBySale = group(categoryLinks, (l) => l.saleId, (l) => l.categoryId);
+    const productsBySale = group(
+      productLinks,
+      (l) => l.saleId,
+      (l) => l.productId,
+    );
+    const excludedBySale = group(
+      excludedLinks,
+      (l) => l.saleId,
+      (l) => l.productId,
+    );
+    const catsBySale = group(
+      categoryLinks,
+      (l) => l.saleId,
+      (l) => l.categoryId,
+    );
 
     // CATEGORIES scope: a product matches when its own category is the sale's
     // category or any descendant of it. Expanding each sale category to

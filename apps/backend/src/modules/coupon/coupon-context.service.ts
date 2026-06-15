@@ -15,16 +15,26 @@ export class CouponContextService {
 
   async fromCart(ctx: CartContext): Promise<CouponContext> {
     const priced = await this.cart.getPriced(ctx);
-    const lines: CouponLine[] = [];
-    for (const line of priced.items) {
-      if (line.unavailable) continue;
-      const lineage = await this.categoryLineage(line.productId);
-      lines.push({
-        productId: line.productId,
-        categoryLineage: lineage,
-        lineTotal: line.lineTotal,
-      });
+    const available = priced.items.filter((line) => !line.unavailable);
+
+    // Batch the per-line product fetch; resolve ancestors once per unique
+    // category (was a product lookup + ancestor CTE per line).
+    const products = await this.products.findByIds([...new Set(available.map((l) => l.productId))]);
+    const categoryByProduct = new Map(products.map((p) => [p.id, p.categoryId]));
+    const lineageByCategory = new Map<string, string[]>();
+    for (const categoryId of new Set(categoryByProduct.values())) {
+      const ancestors = await this.categories.ancestors(categoryId).catch(() => []);
+      lineageByCategory.set(categoryId, [categoryId, ...ancestors.map((c) => c.id)]);
     }
+
+    const lines: CouponLine[] = available.map((line) => {
+      const categoryId = categoryByProduct.get(line.productId);
+      return {
+        productId: line.productId,
+        categoryLineage: categoryId ? (lineageByCategory.get(categoryId) ?? []) : [],
+        lineTotal: line.lineTotal,
+      };
+    });
     return { userId: ctx.userId, subtotal: priced.subtotal, lines };
   }
 

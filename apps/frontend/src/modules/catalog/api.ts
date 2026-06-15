@@ -1,6 +1,11 @@
 import { apiFetch } from '@/lib/api/client';
 import type { Paginated } from '@/types/api';
-import type { StorefrontProductDetail, StorefrontVariant, VariantListParams } from './types';
+import type {
+  StorefrontProductDetail,
+  StorefrontVariant,
+  TopTag,
+  VariantListParams,
+} from './types';
 
 /** Serialize listing params — arrays become repeated keys (Nest parses to string[]). */
 function serialize(params: VariantListParams): string {
@@ -37,6 +42,8 @@ export const catalogApi = {
     apiFetch<ProductMediaItem[]>(`/products/${productId}/media`, { auth: false }),
 
   featured: () => apiFetch<FeaturedItem[]>('/featured-products', { auth: false }),
+
+  topTags: () => apiFetch<TopTag[]>('/storefront/tags/top', { auth: false }),
 };
 
 export interface FeaturedItem {

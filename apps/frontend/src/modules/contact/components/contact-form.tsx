@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -136,7 +137,12 @@ export function ContactForm() {
               <FormItem>
                 <FormLabel>Phone</FormLabel>
                 <FormControl>
-                  <Input type="tel" inputMode="tel" autoComplete="tel" {...field} />
+                  <PhoneInput
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormDescription>Optional — if you&apos;d prefer a call back.</FormDescription>
                 <FormMessage />

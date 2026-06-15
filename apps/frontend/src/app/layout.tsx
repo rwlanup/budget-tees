@@ -38,8 +38,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${bricolage.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh bg-background text-foreground antialiased">
-        <Providers>{children}</Providers>
-        <Toaster richColors position="top-right" />
+        <Providers>
+          {children}
+          <Toaster richColors position="top-right" />
+        </Providers>
       </body>
     </html>
   );

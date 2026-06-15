@@ -198,6 +198,21 @@ export class ReviewService {
       order: { createdAt: 'DESC' },
       skip: query.skip,
       take: query.limit,
+      relations: ['product', 'user'],
+      loadEagerRelations: false,
+      select: {
+        id: true,
+        productId: true,
+        userId: true,
+        rating: true,
+        title: true,
+        body: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        product: { id: true, name: true, slug: true },
+        user: { id: true, firstName: true, lastName: true },
+      },
     });
     return paginate(items, total, query.page, query.limit);
   }

@@ -1,14 +1,10 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numeric } from '../../../common/utils/numeric-transformer';
 import { PaymentMethod } from '../../order/enums/order.enums';
 import { PaymentRecordStatus } from '../enums/payment.enums';
 import { Order } from '../../order/entities/order.entity';
 import { PaymentRefund } from './payment-refund.entity';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
 
 @Entity('payments')
 export class Payment extends BaseEntity {

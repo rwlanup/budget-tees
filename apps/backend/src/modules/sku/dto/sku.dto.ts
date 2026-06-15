@@ -10,6 +10,7 @@ import {
   Length,
   Min,
 } from 'class-validator';
+import { IsGreaterThanField } from '../../../common/decorators/is-greater-than-field.decorator';
 
 export class GenerateSkusDto {
   @IsOptional() @IsNumber() @Min(0) defaultPrice?: number;
@@ -27,7 +28,7 @@ export class CreateSkuDto {
   @IsOptional() @IsString() @Length(1, 64) sku?: string;
   @IsOptional() @IsString() @Length(1, 64) barcode?: string;
   @IsNumber() @Min(0) price: number;
-  @IsOptional() @IsNumber() @Min(0) compareAtPrice?: number;
+  @IsOptional() @IsNumber() @Min(0) @IsGreaterThanField('price') compareAtPrice?: number;
   @IsOptional() @IsNumber() @Min(0) costPrice?: number;
   @IsOptional() @IsInt() @Min(0) stock?: number;
   @IsOptional() @IsInt() @Min(0) lowStockThreshold?: number;
@@ -41,7 +42,7 @@ export class UpdateSkuDto {
   @IsOptional() @IsString() @Length(1, 64) sku?: string;
   @IsOptional() @IsString() @Length(1, 64) barcode?: string;
   @IsOptional() @IsNumber() @Min(0) price?: number;
-  @IsOptional() @IsNumber() @Min(0) compareAtPrice?: number;
+  @IsOptional() @IsNumber() @Min(0) @IsGreaterThanField('price') compareAtPrice?: number;
   @IsOptional() @IsNumber() @Min(0) costPrice?: number;
   @IsOptional() @IsInt() @Min(0) lowStockThreshold?: number;
   @IsOptional() @IsBoolean() allowBackorder?: boolean;

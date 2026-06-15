@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { numericFieldProps } from '@/lib/form-utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/shared/submit-button';
@@ -115,18 +116,7 @@ export function RefundDialog({ open, onOpenChange, payment }: Props) {
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min={0.01}
-                      step="0.01"
-                      name={field.name}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      value={String(field.value ?? '')}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
-                      }
-                    />
+                    <Input type="number" min={0.01} step="0.01" {...numericFieldProps(field)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

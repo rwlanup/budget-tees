@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { Permissions } from '../../../common/decorators/permissions.decorator';
 import { PERMISSIONS } from '../../../common/constants/permissions';
@@ -18,6 +18,12 @@ export class MeController {
   @Patch()
   update(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
     return this.users.updateProfile(userId, dto);
+  }
+
+  @Post('deactivate')
+  async deactivateAccount(@CurrentUser('id') userId: string) {
+    await this.users.deactivate(userId);
+    return { deactivated: true };
   }
 
   @Delete()

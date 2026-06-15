@@ -56,7 +56,7 @@ export function ProductDetail({ id }: { id: string }) {
               <ProductGalleryManager productId={product.id} />
             </TabsContent>
             <TabsContent value="attributes" className="mt-6">
-              <ProductAttributesManager productId={product.id} />
+              <ProductAttributesManager product={product} />
             </TabsContent>
             <TabsContent value="variants" className="mt-6">
               <ProductVariantsManager product={product} />

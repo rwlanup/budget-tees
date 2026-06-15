@@ -1,13 +1,9 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numericNullable } from '../../../common/utils/numeric-transformer';
 import { ItemCondition } from '../enums/return.enums';
 import { ReturnRequest } from './return-request.entity';
 import { SkuSnapshot } from '../../sku/entities/sku.entity';
-
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
 
 @Entity('return_items')
 export class ReturnItem extends BaseEntity {

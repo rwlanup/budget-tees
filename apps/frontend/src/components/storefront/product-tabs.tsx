@@ -1,5 +1,7 @@
 'use client';
 
+import { Fragment } from 'react';
+import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useStoreConfig } from '@/lib/storefront/use-store-config';
 import { ProductReviews } from './product-reviews';
@@ -38,11 +40,31 @@ export function ProductTabs({
           {product.brand && (
             <>
               <dt className="text-muted-foreground">Brand</dt>
-              <dd>{product.brand.name}</dd>
+              <dd>
+                <Link
+                  href={`/shop?brandId=${product.brand.id}`}
+                  className="underline-offset-2 transition-colors hover:text-brand hover:underline"
+                >
+                  {product.brand.name}
+                </Link>
+              </dd>
             </>
           )}
           <dt className="text-muted-foreground">Category</dt>
-          <dd>{product.category.name}</dd>
+          <dd>
+            <Link
+              href={`/category/${product.category.slug}`}
+              className="underline-offset-2 transition-colors hover:text-brand hover:underline"
+            >
+              {product.category.name}
+            </Link>
+          </dd>
+          {detail.attributes.map((a) => (
+            <Fragment key={a.attributeId}>
+              <dt className="text-muted-foreground">{a.name}</dt>
+              <dd>{a.values.map((v) => v.value).join(', ')}</dd>
+            </Fragment>
+          ))}
           {activeSku && (
             <>
               <dt className="text-muted-foreground">SKU</dt>
@@ -52,7 +74,19 @@ export function ProductTabs({
           {product.tags.length > 0 && (
             <>
               <dt className="text-muted-foreground">Tags</dt>
-              <dd>{product.tags.map((t) => t.name).join(', ')}</dd>
+              <dd>
+                {product.tags.map((t, i) => (
+                  <Fragment key={t.id}>
+                    {i > 0 && ', '}
+                    <Link
+                      href={`/search?q=${encodeURIComponent(t.name)}`}
+                      className="underline-offset-2 transition-colors hover:text-brand hover:underline"
+                    >
+                      {t.name}
+                    </Link>
+                  </Fragment>
+                ))}
+              </dd>
             </>
           )}
         </dl>

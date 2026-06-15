@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 
 /** Mirrors UpdateProfileDto (self). */
 export const profileSchema = z.object({
@@ -12,7 +13,7 @@ export const addressSchema = z.object({
   type: z.enum(['SHIPPING', 'BILLING', 'BOTH']),
   label: z.string().max(40).optional().or(z.literal('')),
   recipientName: z.string().min(1, 'Required').max(120),
-  phone: z.string().min(5, 'Enter a valid phone').max(20),
+  phone: z.string().refine(isValidPhoneNumber, 'Enter a valid phone number'),
   email: z.email('Enter a valid email').optional().or(z.literal('')),
   line1: z.string().min(1, 'Required').max(180),
   line2: z.string().max(180).optional().or(z.literal('')),

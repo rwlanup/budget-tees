@@ -1,14 +1,6 @@
 import { Column, Entity, Index, OneToMany, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
+import { numeric, numericNullable } from '../../../common/utils/numeric-transformer';
 
 @Entity('shipping_zones')
 export class ShippingZone extends BaseEntity {

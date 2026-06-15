@@ -1,13 +1,10 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numeric } from '../../../common/utils/numeric-transformer';
 import { FulfillmentMethod, OrderStatus, PaymentMethod, PaymentStatus } from '../enums/order.enums';
 import { OrderItem } from './order-item.entity';
+import { OrderStatusHistory } from './order-status-history.entity';
 import { Payment } from '../../payment/entities/payment.entity';
-
-const numeric = {
-  to: (v: number) => v,
-  from: (v: string | null) => (v === null ? 0 : parseFloat(v)),
-};
 
 export interface AddressSnapshot {
   recipientName: string;
@@ -116,4 +113,8 @@ export class Order extends BaseEntity {
   /** Payment attempts/records for this order. Non-eager — loaded explicitly on detail reads. */
   @OneToMany(() => Payment, (p) => p.order)
   payments: Payment[];
+
+  /** Status transition log. Non-eager — loaded explicitly where needed. */
+  @OneToMany(() => OrderStatusHistory, (h) => h.order)
+  statusHistory: OrderStatusHistory[];
 }

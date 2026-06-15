@@ -3,14 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource, In, Repository } from 'typeorm';
 import { emitNotification } from '../../notification/notification-event';
-import { NotificationActorType, NotificationType } from '../../notification/enums/notification.enums';
+import {
+  NotificationActorType,
+  NotificationType,
+} from '../../notification/enums/notification.enums';
 import { Order, AddressSnapshot } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { FulfillmentMethod, OrderStatus, PaymentStatus } from '../enums/order.enums';
 import { OrderStatusService } from './order-status.service';
 import { CheckoutDto, AddressInputDto } from '../dto/checkout.dto';
 import { CartService } from '../../cart/cart.service';
-import { CartPricingService } from '../../cart/cart-pricing.service';
+import { CartPricingService, PricedCart, PricedCartLine } from '../../cart/cart-pricing.service';
 import { ProductService } from '../../product/product.service';
 import { SkuService } from '../../sku/services/sku.service';
 import { InventoryService } from '../../sku/services/inventory.service';
@@ -27,6 +30,41 @@ import { Sku } from '../../sku/entities/sku.entity';
 import { ProductMediaService } from 'src/modules/product/product-media.service';
 import { MediaService } from 'src/modules/media/services/media.service';
 import { AttributeValue } from 'src/modules/attribute/entities/attribute-value.entity';
+
+/** Per-line snapshot data resolved from the priced cart (pre tax/discount). */
+interface CheckoutLine {
+  product: Product;
+  sku: Sku;
+  quantity: number;
+  unitBasePrice: number;
+  unitPrice: number;
+  sourceSaleId: string | null;
+  lineTotal: number;
+  imageUrl: string | null;
+  variant: Record<string, string> | null;
+}
+
+/** A checkout line after discount allocation + tax extraction. */
+interface CheckoutItem extends CheckoutLine {
+  discountAllocated: number;
+  taxAmount: number;
+  taxRateLabel: string | null;
+  finalLineTotal: number;
+}
+
+interface ShippingResolution {
+  shippingCost: number;
+  pickupLocationId: string | null;
+  pickupSnapshot: Record<string, unknown> | null;
+  country: string | undefined;
+}
+
+interface CouponResolution {
+  discountTotal: number;
+  couponId: string | null;
+  couponCode: string | null;
+  shippingCost: number;
+}
 
 @Injectable()
 export class CheckoutService {
@@ -59,6 +97,55 @@ export class CheckoutService {
 
     const cart = await this.cart.getActiveForUser(userId);
     const priced = await this.pricing.price(cart);
+    this.assertPurchasable(priced);
+
+    const lineData = await this.buildLineData(priced.items);
+    const subtotal = addMoney(...lineData.map((l) => l.lineTotal));
+
+    const ship = await this.resolveShipping(dto, subtotal);
+    const coupon = await this.applyCoupon(dto, userId, subtotal, lineData, ship.shippingCost);
+    const { itemsData, taxTotal } = await this.allocateDiscountAndTax(
+      lineData,
+      subtotal,
+      coupon.discountTotal,
+      ship.country ?? 'NP',
+    );
+
+    const grandTotal = round2(subtotal - coupon.discountTotal + coupon.shippingCost);
+    const saleSavings = addMoney(
+      ...itemsData.map((l) => round2((l.unitBasePrice - l.unitPrice) * l.quantity)),
+    );
+
+    const placed = await this.persistOrder({
+      userId,
+      dto,
+      idempotencyKey,
+      cartId: cart.id,
+      itemsData,
+      pickup: { id: ship.pickupLocationId, snapshot: ship.pickupSnapshot },
+      totals: {
+        subtotal,
+        discountTotal: coupon.discountTotal,
+        shippingCost: coupon.shippingCost,
+        taxTotal,
+        saleSavings,
+        grandTotal,
+      },
+      coupon: { id: coupon.couponId, code: coupon.couponCode },
+    });
+
+    // Notify admins of the new order (the customer who placed it is not self-notified).
+    emitNotification(this.events, {
+      type: NotificationType.ORDER_PLACED,
+      actorId: userId,
+      actorType: NotificationActorType.CUSTOMER,
+      order: { id: placed.id, orderNumber: placed.orderNumber, userId: placed.userId },
+    });
+    return placed;
+  }
+
+  /** Cart must be non-empty and every line in stock + available. */
+  private assertPurchasable(priced: PricedCart): void {
     if (!priced.items.length) throw new BadRequestException('Cart is empty');
     const unavailable = priced.items.filter((l) => l.unavailable || !l.inStock);
     if (unavailable.length) {
@@ -68,20 +155,12 @@ export class CheckoutService {
         details: unavailable.map((l) => l.skuId),
       });
     }
+  }
 
-    // Resolve per-line snapshot data (price, sale source, product, tax class).
-    const lineData: Array<{
-      product: Product;
-      sku: Sku;
-      quantity: number;
-      unitBasePrice: number;
-      unitPrice: number;
-      sourceSaleId: string | null;
-      lineTotal: number;
-      imageUrl: string | null;
-      variant: Record<string, string> | null;
-    }> = [];
-    for (const line of priced.items) {
+  /** Resolve per-line snapshot data (price, sale source, product, variant, image). */
+  private async buildLineData(items: PricedCartLine[]): Promise<CheckoutLine[]> {
+    const lineData: CheckoutLine[] = [];
+    for (const line of items) {
       const product = await this.products.findOneByIdOrSlug(line.productId, false);
       const sku = await this.skus.findOne(line.skuId);
       const media = sku.imageMediaId
@@ -98,7 +177,6 @@ export class CheckoutService {
         ? Object.fromEntries(skuAttributes.map((sav) => [sav.attribute.name, sav.value]))
         : null;
       const resolved = await this.sales.resolveForProduct(product.id, sku.price);
-      const lineTotal = multiplyMoney(resolved.salePrice, line.quantity);
       lineData.push({
         product,
         sku,
@@ -106,15 +184,16 @@ export class CheckoutService {
         unitBasePrice: sku.price,
         unitPrice: resolved.salePrice,
         sourceSaleId: resolved.sourceSaleId,
-        lineTotal,
+        lineTotal: multiplyMoney(resolved.salePrice, line.quantity),
         imageUrl: media?.url ?? null,
-        variant: variant,
+        variant,
       });
     }
+    return lineData;
+  }
 
-    const subtotal = addMoney(...lineData.map((l) => l.lineTotal));
-
-    // Shipping.
+  /** Validate fulfillment + compute the shipping cost (pickup snapshot when applicable). */
+  private async resolveShipping(dto: CheckoutDto, subtotal: number): Promise<ShippingResolution> {
     const country =
       dto.fulfillmentMethod === FulfillmentMethod.DELIVERY
         ? dto.shippingAddress?.countryCode
@@ -122,6 +201,7 @@ export class CheckoutService {
     if (dto.fulfillmentMethod === FulfillmentMethod.DELIVERY && !dto.shippingAddress) {
       throw new BadRequestException('Shipping address is required for delivery');
     }
+
     let pickupSnapshot: Record<string, unknown> | null = null;
     let pickupLocationId: string | null = null;
     if (dto.fulfillmentMethod === FulfillmentMethod.PICKUP) {
@@ -135,7 +215,8 @@ export class CheckoutService {
         phone: store.phone,
       };
     }
-    const shippingQuote = await this.shipping.calculate(
+
+    const quote = await this.shipping.calculate(
       dto.fulfillmentMethod === FulfillmentMethod.PICKUP
         ? ShippingMethod.PICKUP
         : ShippingMethod.DELIVERY,
@@ -143,51 +224,51 @@ export class CheckoutService {
       country,
       dto.shippingAddress?.region,
     );
-    let shippingCost = shippingQuote.shippingCost;
+    return { shippingCost: quote.shippingCost, pickupLocationId, pickupSnapshot, country };
+  }
 
-    // Coupon.
-    let discountTotal = 0;
-    let couponId: string | null = null;
-    let couponCode: string | null = null;
-    if (dto.couponCode) {
-      const couponLines: CouponLine[] = [];
-      for (const l of lineData) {
-        const ancestors = await this.categories.ancestors(l.product.categoryId).catch(() => []);
-        couponLines.push({
-          productId: l.product.id,
-          categoryLineage: [l.product.categoryId, ...ancestors.map((c) => c.id)],
-          lineTotal: l.lineTotal,
-        });
-      }
-      const result = await this.coupons.validateOrThrow(dto.couponCode, {
-        userId,
-        subtotal,
-        lines: couponLines,
-      });
-      discountTotal = result.discountAmount;
-      couponId = result.coupon.id;
-      couponCode = result.coupon.code;
-      if (result.freeShipping) shippingCost = 0;
+  /** Validate the coupon (if any) against the lines; free-shipping coupons zero the shipping cost. */
+  private async applyCoupon(
+    dto: CheckoutDto,
+    userId: string,
+    subtotal: number,
+    lineData: CheckoutLine[],
+    shippingCost: number,
+  ): Promise<CouponResolution> {
+    if (!dto.couponCode) {
+      return { discountTotal: 0, couponId: null, couponCode: null, shippingCost };
     }
+    const couponLines: CouponLine[] = [];
+    for (const l of lineData) {
+      const ancestors = await this.categories.ancestors(l.product.categoryId).catch(() => []);
+      couponLines.push({
+        productId: l.product.id,
+        categoryLineage: [l.product.categoryId, ...ancestors.map((c) => c.id)],
+        lineTotal: l.lineTotal,
+      });
+    }
+    const result = await this.coupons.validateOrThrow(dto.couponCode, {
+      userId,
+      subtotal,
+      lines: couponLines,
+    });
+    return {
+      discountTotal: result.discountAmount,
+      couponId: result.coupon.id,
+      couponCode: result.coupon.code,
+      shippingCost: result.freeShipping ? 0 : shippingCost,
+    };
+  }
 
-    // Allocate discount proportionally by line share of subtotal.
-    const taxCountry = country ?? 'NP';
+  /** Allocate the discount proportionally by line share, then extract per-line tax. */
+  private async allocateDiscountAndTax(
+    lineData: CheckoutLine[],
+    subtotal: number,
+    discountTotal: number,
+    taxCountry: string,
+  ): Promise<{ itemsData: CheckoutItem[]; taxTotal: number }> {
     let taxTotal = 0;
-    const itemsData: Array<{
-      product: Product;
-      sku: Sku;
-      quantity: number;
-      unitBasePrice: number;
-      unitPrice: number;
-      sourceSaleId: string | null;
-      lineTotal: number;
-      discountAllocated: number;
-      taxAmount: number;
-      taxRateLabel: string | null;
-      finalLineTotal: number;
-      imageUrl: string | null;
-      variant: Record<string, string> | null;
-    }> = [];
+    const itemsData: CheckoutItem[] = [];
     for (const l of lineData) {
       const share = subtotal > 0 ? l.lineTotal / subtotal : 0;
       const discountAllocated = round2(discountTotal * share);
@@ -202,13 +283,29 @@ export class CheckoutService {
         finalLineTotal: taxableBase,
       });
     }
+    return { itemsData, taxTotal };
+  }
 
-    const grandTotal = round2(subtotal - discountTotal + shippingCost);
-    const saleSavings = addMoney(
-      ...itemsData.map((l) => round2((l.unitBasePrice - l.unitPrice) * l.quantity)),
-    );
-
-    const placed = await this.dataSource.transaction(async (mgr) => {
+  /** Reserve stock, persist the order + items + status + coupon redemption, mark cart converted — atomically. */
+  private persistOrder(p: {
+    userId: string;
+    dto: CheckoutDto;
+    idempotencyKey?: string;
+    cartId: string;
+    itemsData: CheckoutItem[];
+    pickup: { id: string | null; snapshot: Record<string, unknown> | null };
+    totals: {
+      subtotal: number;
+      discountTotal: number;
+      shippingCost: number;
+      taxTotal: number;
+      saleSavings: number;
+      grandTotal: number;
+    };
+    coupon: { id: string | null; code: string | null };
+  }): Promise<Order> {
+    const { userId, dto, idempotencyKey, cartId, itemsData, pickup, totals, coupon } = p;
+    return this.dataSource.transaction(async (mgr) => {
       // Reserve stock for each line (locked).
       for (const l of itemsData) {
         await this.inventory.reserve(l.sku.id, l.quantity, { refType: 'order' }, mgr);
@@ -232,18 +329,18 @@ export class CheckoutService {
             : dto.shippingAddress
               ? this.snapshot(dto.shippingAddress)
               : null,
-          pickupLocationId,
-          pickupLocation: pickupSnapshot,
+          pickupLocationId: pickup.id,
+          pickupLocation: pickup.snapshot,
           contactEmail: dto.contactEmail,
           contactPhone: dto.contactPhone,
-          subtotal,
-          discountTotal,
-          couponId,
-          couponCode,
-          shippingCost,
-          taxTotal,
-          saleSavings,
-          grandTotal,
+          subtotal: totals.subtotal,
+          discountTotal: totals.discountTotal,
+          couponId: coupon.id,
+          couponCode: coupon.code,
+          shippingCost: totals.shippingCost,
+          taxTotal: totals.taxTotal,
+          saleSavings: totals.saleSavings,
+          grandTotal: totals.grandTotal,
           customerNote: dto.customerNote ?? null,
           idempotencyKey: idempotencyKey ?? null,
           placedAt: new Date(),
@@ -272,22 +369,13 @@ export class CheckoutService {
       await mgr.getRepository(OrderItem).save(items);
       await this.status.record(mgr, order.id, OrderStatus.PENDING, 'Order placed', userId);
 
-      if (couponId) {
-        await this.coupons.redeem(couponId, userId, order.id, discountTotal, mgr);
+      if (coupon.id) {
+        await this.coupons.redeem(coupon.id, userId, order.id, totals.discountTotal, mgr);
       }
-      await mgr.update('carts', { id: cart.id }, { status: 'CONVERTED' });
+      await mgr.update('carts', { id: cartId }, { status: 'CONVERTED' });
 
       return mgr.getRepository(Order).findOneOrFail({ where: { id: order.id } });
     });
-
-    // Notify admins of the new order (the customer who placed it is not self-notified).
-    emitNotification(this.events, {
-      type: NotificationType.ORDER_PLACED,
-      actorId: userId,
-      actorType: NotificationActorType.CUSTOMER,
-      order: { id: placed.id, orderNumber: placed.orderNumber, userId: placed.userId },
-    });
-    return placed;
   }
 
   private snapshot(a: AddressInputDto): AddressSnapshot {

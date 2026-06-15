@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { numericFieldProps } from '@/lib/form-utils';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import {
@@ -217,13 +218,7 @@ export function TaxRateFormDialog({ open, onOpenChange, rate }: Props) {
                           min={0}
                           max={100}
                           className="pr-7"
-                          name={field.name}
-                          ref={field.ref}
-                          onBlur={field.onBlur}
-                          value={String(field.value ?? 0)}
-                          onChange={(e) =>
-                            field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
-                          }
+                          {...numericFieldProps(field)}
                         />
                         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                           %

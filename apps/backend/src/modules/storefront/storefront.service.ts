@@ -6,9 +6,10 @@ import { Sku } from '../sku/entities/sku.entity';
 import { SkuAttributeValue } from '../sku/entities/sku-attribute-value.entity';
 import { Product } from '../product/entities/product.entity';
 import { ProductMedia } from '../product/entities/product-media.entity';
-import { ProductStatus } from '../product/enums/product.enums';
+import { ProductStatus, ProductType } from '../product/enums/product.enums';
 import { AttributeValue } from '../attribute/entities/attribute-value.entity';
 import { Attribute } from '../attribute/entities/attribute.entity';
+import { Tag } from '../tag/entities/tag.entity';
 import { ProductService } from '../product/product.service';
 import { CategoryService } from '../category/category.service';
 import { ProductAttributeService } from '../attribute/services/product-attribute.service';
@@ -59,11 +60,19 @@ export interface StorefrontVariantDetail {
   image: StoreImage | null;
 }
 
+export interface TopTag {
+  id: string;
+  name: string;
+  slug: string;
+  productCount: number;
+}
+
 export interface StorefrontProductDetail {
   product: {
     id: string;
     name: string;
     slug: string;
+    type: ProductType;
     description: string | null;
     shortDescription: string | null;
     metaTitle: string | null;
@@ -78,6 +87,13 @@ export interface StorefrontProductDetail {
     name: string;
     values: { id: string; value: string; meta: unknown }[];
   }[];
+  /** All attributes assigned to the product (variation + fixed specs). */
+  attributes: {
+    attributeId: string;
+    name: string;
+    isVariation: boolean;
+    values: { id: string; value: string }[];
+  }[];
   variants: StorefrontVariantDetail[];
   defaultSkuId: string | null;
 }
@@ -91,6 +107,7 @@ export class StorefrontService {
     @InjectRepository(ProductMedia) private readonly productMediaRepo: Repository<ProductMedia>,
     @InjectRepository(AttributeValue) private readonly valueRepo: Repository<AttributeValue>,
     @InjectRepository(Attribute) private readonly attrRepo: Repository<Attribute>,
+    @InjectRepository(Tag) private readonly tagRepo: Repository<Tag>,
     private readonly products: ProductService,
     private readonly categories: CategoryService,
     private readonly productAttributes: ProductAttributeService,
@@ -183,6 +200,45 @@ export class StorefrontService {
     return paginate(items, total, q.page, q.limit);
   }
 
+  /**
+   * Active tags ranked by how many in-stock, published products carry them.
+   * "Available" = published, non-deleted product with ≥1 active SKU that has
+   * available stock. Used for homepage quick links.
+   */
+  async topTags(limit = 4): Promise<TopTag[]> {
+    const rows = await this.tagRepo
+      .createQueryBuilder('t')
+      .innerJoin('product_tags', 'pt', 'pt."tagId" = t.id')
+      .innerJoin(
+        Product,
+        'p',
+        'p.id = pt."productId" AND p."status" = :pub AND p."deletedAt" IS NULL',
+        { pub: ProductStatus.PUBLISHED },
+      )
+      .innerJoin(
+        Sku,
+        's',
+        's."productId" = p.id AND s."isActive" = true AND (s."stock" - s."reserved") > 0',
+      )
+      .where('t."isActive" = true')
+      .select('t.id', 'id')
+      .addSelect('t.name', 'name')
+      .addSelect('t.slug', 'slug')
+      .addSelect('COUNT(DISTINCT p.id)', 'productCount')
+      .groupBy('t.id')
+      .orderBy('"productCount"', 'DESC')
+      .addOrderBy('t.name', 'ASC')
+      .limit(limit)
+      .getRawMany<{ id: string; name: string; slug: string; productCount: string }>();
+
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      productCount: Number(r.productCount),
+    }));
+  }
+
   private async assembleVariants(skus: Sku[]): Promise<StorefrontVariant[]> {
     if (!skus.length) return [];
     const productIds = [...new Set(skus.map((s) => s.productId))];
@@ -191,26 +247,27 @@ export class StorefrontService {
     const products = await this.productRepo.find({ where: { id: In(productIds) } });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const combos = await this.savRepo.find({ where: { skuId: In(skuIds) } });
-    const comboMap = new Map<string, string[]>();
-    for (const c of combos) {
-      const arr = comboMap.get(c.skuId) ?? [];
-      arr.push(c.attributeValueId);
-      comboMap.set(c.skuId, arr);
-    }
-
-    const valueLabels = await this.valueLabels([...new Set(combos.map((c) => c.attributeValueId))]);
+    const comboMap = await this.combosBySku(skuIds);
+    const valueLabels = await this.valueLabels([...new Set([...comboMap.values()].flat())]);
     const primaryMedia = await this.primaryMediaByProduct(productIds);
-    const imageCache = new Map<string, StoreImage | null>();
+
+    // Resolve sale prices for all products in one batch, and prefetch every
+    // image in one query — replaces the previous per-SKU sale + per-media calls.
+    const pricer = await this.sales.buildPricer(
+      products.map((p) => ({ id: p.id, categoryId: p.categoryId })),
+    );
+    const imageCache = await this.loadImages(
+      skus.map((s) => s.imageMediaId ?? primaryMedia.get(s.productId) ?? null),
+    );
 
     const out: StorefrontVariant[] = [];
     for (const s of skus) {
       const p = productMap.get(s.productId);
       if (!p) continue;
       const valueIds = comboMap.get(s.id) ?? [];
-      const resolved = await this.sales.resolveForProduct(s.productId, s.price);
+      const resolved = pricer.price(p.id, s.price);
       const mediaId = s.imageMediaId ?? primaryMedia.get(s.productId) ?? null;
-      const image = mediaId ? await this.resolveImage(mediaId, imageCache) : null;
+      const image = mediaId ? (imageCache.get(mediaId) ?? null) : null;
       const available = s.stock - s.reserved;
       out.push({
         skuId: s.id,
@@ -248,13 +305,7 @@ export class StorefrontService {
       order: { createdAt: 'ASC' },
     });
 
-    const combos = await this.savRepo.find({ where: { skuId: In(skus.map((s) => s.id)) } });
-    const comboMap = new Map<string, string[]>();
-    for (const c of combos) {
-      const arr = comboMap.get(c.skuId) ?? [];
-      arr.push(c.attributeValueId);
-      comboMap.set(c.skuId, arr);
-    }
+    const comboMap = await this.combosBySku(skus.map((s) => s.id));
 
     const assigned = await this.productAttributes.getForProduct(product.id);
     const axes = assigned
@@ -268,30 +319,44 @@ export class StorefrontService {
           meta: v.meta,
         })),
       }));
+    const attributes = assigned.map((a) => ({
+      attributeId: a.attributeId as string,
+      name: (a.name as string) ?? '',
+      isVariation: !!a.isVariation,
+      values: ((a.values as AttributeValue[]) ?? []).map((v) => ({ id: v.id, value: v.value })),
+    }));
 
     const galleryRows = await this.productMediaRepo.find({
       where: { productId: product.id },
       order: { sortOrder: 'ASC' },
     });
-    const imageCache = new Map<string, StoreImage | null>();
-    const gallery = [] as StorefrontProductDetail['gallery'];
-    for (const row of galleryRows) {
-      const img = await this.resolveImage(row.mediaId, imageCache);
-      gallery.push({
+    const primaryMediaId =
+      galleryRows.find((r) => r.isPrimary)?.mediaId ?? galleryRows[0]?.mediaId ?? null;
+
+    // One batch each for sale prices and images, then assemble synchronously.
+    const pricer = await this.sales.buildPricer([
+      { id: product.id, categoryId: product.categoryId },
+    ]);
+    const imageCache = await this.loadImages([
+      ...galleryRows.map((r) => r.mediaId),
+      ...skus.map((s) => s.imageMediaId ?? primaryMediaId),
+    ]);
+
+    const gallery = galleryRows.map((row) => {
+      const img = imageCache.get(row.mediaId) ?? null;
+      return {
         mediaId: row.mediaId,
         url: img?.url ?? null,
         isPrimary: row.isPrimary,
         alt: img?.alt ?? null,
-      });
-    }
-    const primaryMediaId =
-      galleryRows.find((r) => r.isPrimary)?.mediaId ?? galleryRows[0]?.mediaId ?? null;
+      };
+    });
 
     const variants: StorefrontVariantDetail[] = [];
     for (const s of skus) {
-      const resolved = await this.sales.resolveForProduct(product.id, s.price);
+      const resolved = pricer.price(product.id, s.price);
       const mediaId = s.imageMediaId ?? primaryMediaId;
-      const image = mediaId ? await this.resolveImage(mediaId, imageCache) : null;
+      const image = mediaId ? (imageCache.get(mediaId) ?? null) : null;
       const available = s.stock - s.reserved;
       variants.push({
         skuId: s.id,
@@ -315,6 +380,7 @@ export class StorefrontService {
         id: product.id,
         name: product.name,
         slug: product.slug,
+        type: product.type,
         description: product.description,
         shortDescription: product.shortDescription,
         metaTitle: product.metaTitle,
@@ -329,12 +395,61 @@ export class StorefrontService {
       },
       gallery,
       axes,
+      attributes,
       variants,
       defaultSkuId: product.defaultSkuId,
     };
   }
 
   // ---------- helpers ----------
+
+  /** Group SKU → its attribute-value combo ids (one query for all skus). */
+  private async combosBySku(skuIds: string[]): Promise<Map<string, string[]>> {
+    const map = new Map<string, string[]>();
+    if (!skuIds.length) return map;
+    const combos = await this.savRepo.find({ where: { skuId: In(skuIds) } });
+    for (const c of combos) {
+      const arr = map.get(c.skuId) ?? [];
+      arr.push(c.attributeValueId);
+      map.set(c.skuId, arr);
+    }
+    return map;
+  }
+
+  /**
+   * Resolve a set of media ids to `StoreImage`s in a single query, returned as
+   * a cache keyed by media id. Null/duplicate ids are ignored; a missing media
+   * maps to null — matching the previous per-id `findOne(...).catch(() => null)`.
+   */
+  private async loadImages(mediaIds: (string | null)[]): Promise<Map<string, StoreImage | null>> {
+    const cache = new Map<string, StoreImage | null>();
+    const ids = [...new Set(mediaIds.filter((id): id is string => !!id))];
+    if (!ids.length) return cache;
+    const rows = await this.media.findManyByIds(ids);
+    const byId = new Map(rows.map((m) => [m.id, m]));
+    for (const id of ids) {
+      const m = byId.get(id);
+      cache.set(id, m ? this.toStoreImage(m) : null);
+    }
+    return cache;
+  }
+
+  private toStoreImage(m: {
+    url: string;
+    altText: string | null;
+    variants?: { variant: string; url: string; width: number; height: number }[];
+  }): StoreImage {
+    return {
+      url: m.url,
+      alt: m.altText,
+      variants: (m.variants ?? []).map((v) => ({
+        variant: v.variant,
+        url: v.url,
+        width: v.width,
+        height: v.height,
+      })),
+    };
+  }
 
   private async valueLabels(
     valueIds: string[],
@@ -362,27 +477,5 @@ export class StorefrontService {
       if (!existing || r.isPrimary) map.set(r.productId, r.mediaId);
     }
     return map;
-  }
-
-  private async resolveImage(
-    mediaId: string,
-    cache: Map<string, StoreImage | null>,
-  ): Promise<StoreImage | null> {
-    if (cache.has(mediaId)) return cache.get(mediaId) ?? null;
-    const m = await this.media.findOne(mediaId).catch(() => null);
-    const image: StoreImage | null = m
-      ? {
-          url: m.url,
-          alt: m.altText,
-          variants: (m.variants ?? []).map((v) => ({
-            variant: v.variant,
-            url: v.url,
-            width: v.width,
-            height: v.height,
-          })),
-        }
-      : null;
-    cache.set(mediaId, image);
-    return image;
   }
 }

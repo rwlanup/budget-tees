@@ -164,6 +164,17 @@ export function ProductDetailView({
             )}
           </div>
 
+          {product.type === 'SIMPLE' && detail.attributes.length > 0 && (
+            <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-2 text-sm">
+              {detail.attributes.map((a) => (
+                <React.Fragment key={a.attributeId}>
+                  <dt className="text-muted-foreground">{a.name}</dt>
+                  <dd className="font-medium">{a.values.map((v) => v.value).join(', ')}</dd>
+                </React.Fragment>
+              ))}
+            </dl>
+          )}
+
           <Separator />
 
           <div className="flex flex-wrap items-center gap-3">

@@ -1,12 +1,8 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { numericNullable } from '../../../common/utils/numeric-transformer';
 import { ResolutionType, ReturnReason, ReturnStatus } from '../enums/return.enums';
 import { ReturnItem } from './return-item.entity';
-
-const numericNullable = {
-  to: (v: number | null) => v,
-  from: (v: string | null) => (v === null ? null : parseFloat(v)),
-};
 
 @Entity('return_requests')
 export class ReturnRequest extends BaseEntity {
