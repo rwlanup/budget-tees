@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Sparkles, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,7 +36,6 @@ export function HeroSearch() {
       />
       <StorefrontContainer className="py-20 text-center sm:py-28 lg:py-32">
         <div className="reveal-scale mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-muted/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-strong dark:text-brand">
-          <Sparkles className="size-3.5" aria-hidden />
           Simple, Affordable, Everyday
         </div>
 
