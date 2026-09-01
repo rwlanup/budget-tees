@@ -51,6 +51,9 @@ import { NotificationModule } from './modules/notification/notification.module';
         synchronize: false,
         migrations: [__dirname + '/migrations/*.{ts,js}'],
         logging: config.get<string>('database.logging') === 'true',
+        ssl: {
+          rejectUnauthorized: false,
+        }
       }),
     }),
     // Feature modules (migration order).
