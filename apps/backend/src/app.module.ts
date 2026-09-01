@@ -40,21 +40,21 @@ import { NotificationModule } from './modules/notification/notification.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('database.host'),
-        port: config.get<number>('database.port'),
-        username: config.get<string>('database.username'),
-        password: config.get<string>('database.password'),
-        database: config.get<string>('database.database'),
-        autoLoadEntities: true,
-        synchronize: false,
-        migrations: [__dirname + '/migrations/*.{ts,js}'],
-        logging: config.get<string>('database.logging') === 'true',
-        ssl: {
-          rejectUnauthorized: false,
+      useFactory: (config: ConfigService) => {
+        return {
+          type: 'postgres',
+          host: config.get<string>('database.host'),
+          port: config.get<number>('database.port'),
+          username: config.get<string>('database.username'),
+          password: config.get<string>('database.password'),
+          database: config.get<string>('database.database'),
+          autoLoadEntities: true,
+          synchronize: false,
+          migrations: [__dirname + '/migrations/*.{ts,js}'],
+          logging: config.get<string>('database.logging') === 'true',
+          ssl: config.get('database.ssl') || undefined,
         }
-      }),
+      },
     }),
     // Feature modules (migration order).
     SettingsModule,

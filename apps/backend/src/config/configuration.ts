@@ -16,6 +16,10 @@ export const databaseConfig = registerAs('database', () => ({
   password: process.env.DB_PASSWORD ?? 'postgres',
   database: process.env.DB_NAME ?? 'budget_tees',
   logging: process.env.DB_LOGGING ?? 'false',
+  ssl:
+    process.env.DB_SSL_ENABLED === 'true'
+      ? { rejectUnauthorized: false }
+      : undefined,
 }));
 
 export const redisConfig = registerAs('redis', () => ({
