@@ -1,0 +1,18 @@
+name: Hit URLs Every 10 Minutes
+
+on:
+  schedule:
+    # Runs every 10 minutes (GitHub actions might experience delays)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows you to run this manually from the Actions tab
+
+jobs:
+  ping_urls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit Multiple URLs
+        run: |
+          curl -sL "https://budget-tees-web.onrender.com/" &
+          curl -sL "https://budget-tees.onrender.com/"
+          wait
+          echo "All URLs pinged successfully."
